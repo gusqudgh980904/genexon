@@ -1,0 +1,2367 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="Insa">
+
+		<!-- 현병호 인사조회테스트쿼리 -->
+		<select id="selectTestInsaList" resultType="hmap" parameterType="kr.co.gnx.insa.InsaVO">
+			WITH recursive org_cte
+        AS (SELECT 1 AS level
+                 , CONCAT(tb2.sort_no,tb2.snm) AS ordersb
+                 , CONCAT(' / ',CAST(tb2.scd AS CHAR (509))) AS scdpath
+	             , CONCAT(' / ',CAST(tb2.snm AS CHAR (509))) AS snmpath
+                 , tb2.mb_id
+                 , tb2.scd             /* 조직코드       VARCHAR(20)  */
+                 , tb2.snm             /* 조직명         VARCHAR(50)  */
+                 , tb2.pscd            /* 상위조직코드   VARCHAR(20)  */
+                 , tb2.org_unit_gbn    /* 조직단위구분   VARCHAR(10)  */
+                 , tb2.org_unit_detail_gbn	/* 조직 단위 상세 구분   VARCHAR(10)  */
+                 , tb2.org_strt_ymd    /* 조직생성년월일 VARCHAR(10)  */
+                 , tb2.org_end_ymd     /* 조직폐쇄년월일 VARCHAR(10)  */
+                 , tb2.scd_head        /* 조직장         VARCHAR(10)  */
+                 , tb2.telno           /* 조직전화번호   VARCHAR(14)  */
+                 , tb2.faxno           /* 조직팩스번호   VARCHAR(20)  */
+                 , tb2.zipcd           /* 우편번호       VARCHAR(6)   */
+                 , tb2.addr1           /* 주소1          VARCHAR(200) */
+                 , tb2.addr2           /* 주소2          VARCHAR(200) */
+                 , tb2.org_mng_gbn     /* 영업조직여부   VARCHAR(1)   */
+                 , tb2.use_yn          /* 사용여부       VARCHAR(1)   */
+                 , tb2.sort_no         /* 정렬순서       BIGINT       */
+                 , tb2.memo            /* 비고           VARCHAR(200) */
+                 , tb2.in_emp_cd       /* 입력자사번     VARCHAR(20)  */
+                 , tb2.in_dtm          /* 입력일시       DATETIME     */
+                 , tb2.up_emp_cd       /* 수정자사번     VARCHAR(20)  */
+                 , tb2.up_dtm          /* 수정일시       DATETIME     */
+                 , tb2.office_nm
+              FROM (SELECT tb1.*
+                  	  FROM tbin_scd tb1
+					 WHERE tb1.mb_id = #{mb_id}
+					   AND tb1.pscd IS NULL) tb2
+			 UNION ALL
+			SELECT level+1 AS level
+                 , CONCAT(org_cte.ordersb,LPAD(tb3.sort_no,4,'0'),tb3.snm) AS ordersb
+                 , CONCAT(scdpath,' / ',tb3.scd) AS scdpath
+	             , CONCAT(snmpath,' / ',tb3.snm) AS snmpath
+                 , tb3.mb_id
+	             , tb3.scd             /* 조직코드       VARCHAR(20)  */
+                 , tb3.snm             /* 조직명         VARCHAR(50)  */
+                 , tb3.pscd            /* 상위조직코드   VARCHAR(20)  */
+                 , tb3.org_unit_gbn    /* 조직단위구분   VARCHAR(10)  */
+                 , tb3.org_unit_detail_gbn	/* 조직 단위 상세 구분   VARCHAR(10)  */
+                 , tb3.org_strt_ymd    /* 조직생성년월일 VARCHAR(10)  */
+                 , tb3.org_end_ymd     /* 조직폐쇄년월일 VARCHAR(10)  */
+                 , tb3.scd_head        /* 조직장         VARCHAR(10)  */
+                 , tb3.telno           /* 조직전화번호   VARCHAR(14)  */
+                 , tb3.faxno           /* 조직팩스번호   VARCHAR(20)  */
+                 , tb3.zipcd           /* 우편번호       VARCHAR(6)   */
+                 , tb3.addr1           /* 주소1          VARCHAR(200) */
+                 , tb3.addr2           /* 주소2          VARCHAR(200) */
+                 , tb3.org_mng_gbn     /* 영업조직여부   VARCHAR(1)   */
+                 , tb3.use_yn          /* 사용여부       VARCHAR(1)   */
+                 , tb3.sort_no         /* 정렬순서       BIGINT       */
+                 , tb3.memo            /* 비고           VARCHAR(200) */
+                 , tb3.in_emp_cd       /* 입력자사번     VARCHAR(20)  */
+                 , tb3.in_dtm          /* 입력일시       DATETIME     */
+                 , tb3.up_emp_cd       /* 수정자사번     VARCHAR(20)  */
+                 , tb3.up_dtm          /* 수정일시       DATETIME     */
+                 , tb3.office_nm
+	          FROM (SELECT *
+                      FROM tbin_scd
+	                 WHERE mb_id = #{mb_id}) tb3
+		INNER JOIN org_cte
+                ON tb3.pscd = org_cte.scd)
+                
+                <!-- select 쿼리문 -->
+		SELECT tb4.mb_id,tb4.emp_cd,tb4.seq, tb4.emp_nm, tb4.scd, tb4.jikgub,tb4.jikchk,tb4.ent_ymd,
+		tb4.gent_ymd, tb18.cd_vl_nm AS bank
+		, tb4.bk_id
+		,					CASE 	
+		       WHEN IFNULL(tb4.bk_id,'') = '' OR tb4.bk_id IS NULL 
+		       THEN concat(substring(tb4.bk_id,1,4),'')
+				ELSE concat(substring(tb4.bk_id,1,4),'*') 
+				END AS bk_id_masking 
+		,tb4.empsta, tb19.cd_vl_nm AS jikgub_nm
+        , tb20.cd_vl_nm AS jikchk_nm,tb8.snmpath
+                 , SUBSTRING(tb8.scdpath,4) AS scdpath	
+			FROM (SELECT *
+				FROM tbin_empmst
+				WHERE mb_id=#{mb_id}
+				) tb4
+		 LEFT OUTER JOIN org_cte tb8
+		 	ON tb4.scd = tb8.scd
+		 LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'JIKGUB') tb19
+            ON tb4.jikgub = tb19.cd_vl
+   		LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'JIKCHK') tb20
+             ON tb4.jikchk = tb20.cd_vl
+        LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'BANK') tb18
+             ON tb4.bank = tb18.cd_vl
+		WHERE  1 = 1
+			 AND tb4.emp_cd NOT IN (<include refid="Comm.RoleExcepcion"/>)
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEquals(view_auth, "ADMIN") and @kr.co.gnx.comm.util.CommUtil@isNotEmpty(view_auth)'>
+              AND tb4.emp_cd IN (<include refid="Comm.menuEmpCdRole"/>)
+            </if>
+            <if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_EMPSTA)'>
+				AND tb4.empsta = #{SRCH_EMPSTA}
+			</if>
+            <if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_BANK)'>
+				AND tb18.cd_vl = #{SRCH_BANK}
+			</if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_EMP_NM)'>
+			   AND (tb4.emp_cd LIKE CONCAT(#{SRCH_EMP_NM},'%')
+			  	OR tb4.emp_nm LIKE CONCAT(#{SRCH_EMP_NM},'%'))
+			</if>
+            order by tb4.seq desc
+		</select>
+
+
+		<select id="selectDbTargetSchList" parameterType="kr.co.gnx.insa.InsaVO" resultType="hmap">
+			/* dbdistribution-mapper.xml selectDbTargetSchList 인사 사원 조회 DB분배 동의 대상자 기준  조회 */
+			<include refid="Comm.OrgTree"/>
+			SELECT tb5.mb_id
+				 , tb5.seq
+				 , tb5.emp_cd
+				 , tb5.emp_nm
+				 , tb6.login_id
+				 , tb5.scd
+				 , tb8.snm
+				 , SUBSTRING(tb8.snmpath,4) AS snmpath
+				 , tb5.perno
+				 
+				 , tb5.hpno
+				 , tb5.join_gbn
+				 , tb5.telno
+				 , tb5.jikgub
+				 , tb5.jikchk
+				 , tb7.role_id
+				 , tb5.email
+				 , tb5.zipcd
+				 , tb5.addr1
+				 , tb5.addr2
+				 , tb5.empsta
+				 , tb5.pay_gbn
+				 , tb5.re_emp_cd
+				 , tb9.emp_nm AS re_emp_nm
+				 , tb5.rcrt_type
+				 , tb5.lreg_ymd
+				 , tb5.nreg_ymd
+				 , tb5.vreg_ymd
+				 , tb5.vreg_no
+				 , tb5.areg_no
+				 , tb5.areg_yn
+				 , tb5.career_gbn
+				 , tb5.ent_ymd
+				 , tb5.gent_ymd
+				 , tb5.end_ymd
+				 , tb5.out_ymd
+				 , tb5.gain_ymd
+				 , tb5.lost_ymd						 
+				 , tb5.bank
+				 , tb5.bk_id
+				 , tb5.owner
+				 , tb5.owner_relation
+				 , tb5.memo
+				 , tb5.file_name
+				 , tb5.in_emp_cd
+				 , tb5.in_dtm
+				 , tb5.up_emp_cd
+				 , tb5.up_dtm
+			  FROM (SELECT *
+					  FROM tbin_empmst
+					 WHERE mb_id = #{mb_id}) tb5
+	LEFT OUTER JOIN (SELECT *
+					   FROM tbsy_login
+					  WHERE mb_id = #{mb_id}) tb6
+				 ON tb5.emp_cd = tb6.emp_cd
+	LEFT OUTER JOIN (SELECT *
+					   FROM tbsy_user_role_map
+					  WHERE mb_id = #{mb_id}
+						AND concurrent_idx = 1) tb7
+				 ON tb5.emp_cd = tb7.emp_cd
+	LEFT OUTER JOIN org_cte tb8
+				 ON tb5.scd = tb8.scd
+	LEFT OUTER JOIN (SELECT *
+					   FROM tbin_empmst
+					  WHERE mb_id = #{mb_id}) tb9
+				 ON tb5.re_emp_cd = tb9.emp_cd
+		 INNER JOIN (SELECT emp_cd FROM tbbs_dbdistribution_target tb11 WHERE mb_id = #{mb_id} AND db_attribute_seq = #{SRCH_DBATTRIBUTE}) tb12
+				 ON tb5.emp_cd = tb12.emp_cd
+			  WHERE 1 = 1
+				AND tb5.emp_cd NOT IN (<include refid="Comm.RoleExcepcion"/>)
+				<if test="@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SEARCH_WORD)">
+				 AND ( tb5.emp_nm LIKE CONCAT('%',#{SEARCH_WORD},'%')
+					OR tb5.emp_cd LIKE CONCAT('%',UPPER(#{SEARCH_WORD}),'%')
+					)
+				</if>
+	</select>
+	<!-- 등록관련 사원찾기팝업 사원조회 -->
+	<sql id="selectEmpSchSql">
+						<include refid="Comm.OrgTree"/>
+	          			SELECT tb5.mb_id
+			                 , tb5.seq
+			                 , tb5.emp_cd
+			                 , tb5.emp_nm
+			                 , tb5.empsta
+			                 , CONCAT('[', tb5.emp_nm, '(', tb5.emp_cd,')]', ' ', 
+			                   CASE WHEN tb8.pscd IS NULL THEN tb8.snm
+	                   			    ELSE SUBSTRING(SUBSTRING(tb8.snmpath, 4), CHAR_LENGTH(fn_get_pathroot(SUBSTRING(tb8.snmpath,4), ' > ', 1)) + 4)
+	               			    END) AS emp_cd_nm
+	               			 , CONCAT( tb5.emp_nm, '(', tb5.emp_cd,')') AS emp_cd_nm2
+	               			 , CONCAT('[', tb5.emp_nm, '(', tb5.emp_cd, ', ', tb5.empsta, ')]', ' ', 
+			                   CASE WHEN tb8.pscd IS NULL THEN tb8.snm
+	                   			    ELSE SUBSTRING(SUBSTRING(tb8.snmpath, 4), CHAR_LENGTH(fn_get_pathroot(SUBSTRING(tb8.snmpath,4), ' > ', 1)) + 4)
+	               			    END) AS emp_cd_nm3
+			                 , tb6.login_id
+			                 , tb5.scd
+			                 , tb8.snm
+			                 , SUBSTRING(tb8.snmpath,4) AS snmpath
+			                 , tb5.perno
+			                 , tb5.hpno
+			                 , tb5.join_gbn
+			                 , tb5.telno
+			                 , tb5.jikgub
+			                 , tb11.cd_vl_nm AS jikgub_nm
+			                 , tb5.jikchk
+			                 , tb12.cd_vl_nm AS jikchk_nm
+			                 , tb7.role_id
+			                 , tb13.role_nm
+			                 , tb5.email
+			                 , tb5.corp_email_addr
+			                 , tb5.zipcd
+			                 , tb5.addr1
+			                 , tb5.addr2
+			                 , tb5.empsta
+			                 , tb10.cd_vl_nm AS empsta_nm
+			                 , tb5.pay_gbn
+			                 , tb5.re_emp_cd
+			                 , tb9.emp_nm AS re_emp_nm
+			                 , tb5.rcrt_type
+			                 , tb5.lreg_ymd
+			                 , tb5.nreg_ymd
+			                 , tb5.vreg_ymd
+			                 , tb5.vreg_no
+			                 , tb5.areg_no
+			                 , tb5.areg_yn
+			                 , tb5.career_gbn
+			                 , tb14.cd_vl_nm AS career_gbn_nm
+			                 , tb5.ent_ymd
+							 , tb5.gent_ymd
+							 , tb5.end_ymd
+							 , tb5.out_ymd
+							 , tb5.gain_ymd
+							 , tb5.lost_ymd
+							 , tb5.bank
+							 , tb5.bk_id
+							 , tb5.owner
+							 , tb5.owner_relation
+							 , tb5.memo
+							 , tb5.file_name
+							 , tb5.in_emp_cd
+							 , tb5.in_dtm
+							 , tb5.up_emp_cd
+							 , tb5.up_dtm
+							 , fn_get_pathroot(SUBSTRING(tb8.scdpath,2), ' > ', 2) AS scdpath
+							 , fn_get_pathroot(SUBSTRING(tb8.snmpath,4), ' > ', 1) AS snmpath1
+			                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 2) AS snmpath2
+			                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 3) AS snmpath3
+			                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 4) AS snmpath4
+			                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 5) AS snmpath5
+			                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 6) AS snmpath6
+						  FROM (SELECT *
+								  FROM tbin_empmst
+								 WHERE mb_id = #{mb_id}) tb5
+			   LEFT OUTER JOIN (SELECT *
+								  FROM tbsy_login
+								 WHERE mb_id = #{mb_id}) tb6
+							ON tb5.emp_cd = tb6.emp_cd
+			   LEFT OUTER JOIN (SELECT *
+								  FROM tbsy_user_role_map
+								 WHERE mb_id = #{mb_id}
+								   AND concurrent_idx = 1) tb7
+							ON tb5.emp_cd = tb7.emp_cd
+			   LEFT OUTER JOIN org_cte tb8
+							ON tb5.scd = tb8.scd
+			   LEFT OUTER JOIN (SELECT *
+								  FROM tbin_empmst
+								 WHERE mb_id = #{mb_id}) tb9
+							ON tb5.re_emp_cd = tb9.emp_cd
+			   LEFT OUTER JOIN (SELECT *
+								  FROM tbcm_common_code
+								 WHERE mb_id = #{mb_id}
+								   AND grp_cmm_cd = 'EMPSTA') tb10
+							ON tb5.empsta = tb10.cd_vl
+			   LEFT OUTER JOIN (SELECT *
+								  FROM tbcm_common_code
+								 WHERE mb_id = #{mb_id}
+								   AND grp_cmm_cd = 'JIKGUB') tb11
+							ON tb5.jikgub = tb11.cd_vl
+			   LEFT OUTER JOIN (SELECT *
+								  FROM tbcm_common_code
+								 WHERE mb_id = #{mb_id}
+								   AND grp_cmm_cd = 'JIKCHK') tb12
+							ON tb5.jikchk = tb12.cd_vl
+			   LEFT OUTER JOIN (SELECT *
+								  FROM tbsy_roles_map
+								 WHERE mb_id = #{mb_id}) tb13
+							ON tb7.role_id = tb13.role_id
+			   LEFT OUTER JOIN (SELECT *
+								  FROM tbcm_common_code
+								 WHERE mb_id = #{mb_id}
+								   AND grp_cmm_cd = 'CAREER_GBN') tb14
+							ON tb5.career_gbn = tb14.cd_vl
+	           WHERE 1 = 1
+	             AND tb5.emp_cd NOT IN (<include refid="Comm.RoleExcepcion"/>)
+				<if test='@kr.co.gnx.comm.util.CommUtil@isNotEquals(view_auth, "ADMIN") and @kr.co.gnx.comm.util.CommUtil@isNotEmpty(view_auth) and @kr.co.gnx.comm.util.CommUtil@isNotEquals(mb_id, "GAMC")'>
+				 AND tb5.emp_cd IN (<include refid="Comm.menuEmpCdRole"/>)
+				</if>
+	             
+				<if test="@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SEARCH_WORD)">
+				 AND ( tb5.emp_nm LIKE CONCAT('%',#{SEARCH_WORD},'%')
+					OR tb5.emp_cd LIKE CONCAT('%',UPPER(#{SEARCH_WORD}),'%')
+					)
+				</if>
+				<if test="@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_EMPSTA)">
+				 AND tb5.empsta = #{SRCH_EMPSTA}
+				</if>
+				<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(menu_view_type, "TYPE1")'>
+			     AND tb5.emp_cd NOT IN (SELECT emp_cd
+			    						  FROM tbin_emp_reward
+			    						 WHERE mb_id = #{mb_id}
+			    						   AND reward_gbn = '징계'
+			    						   AND reward_content = 'B3'
+			    						   AND IFNULL(reward_end_date, '') != ''
+			    						   AND DATE_FORMAT(NOW(), '%Y-%m-%d') BETWEEN reward_start_date AND reward_end_date
+			    					   )
+				</if>
+	</sql>
+	<select id="selectEmpSchList" resultType="hmap" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml selectEmpSchList 등록관련 사원찾기팝업 사원조회 */
+		<include refid="selectEmpSchSql"/>
+		<if test="@kr.co.gnx.comm.util.CommUtil@isEquals(sort_type, 'Type6')">
+			ORDER BY tb5.empsta, tb5.emp_nm
+		</if>
+		<if test="@kr.co.gnx.comm.util.CommUtil@isEmpty(sort_type)">
+			ORDER BY tb5.seq DESC
+		</if>
+	</select>
+	
+	<!-- 권한사원변경 팝업 사원조회 -->
+	<select id="selectEmpSrchRoleList" resultType="hmap" parameterType="kr.co.gnx.insa.InsaVO">
+	/* insa-mapper.xml selectEmpSrchRoleList 권한사원변경 팝업 사원조회 */
+					<include refid="Comm.OrgTree"/>
+          			SELECT tb5.mb_id
+		                 , tb5.seq
+		                 , tb5.emp_cd
+		                 , tb5.emp_nm
+		                 , tb6.login_id
+		                 , tb5.scd
+		                 , tb8.snm
+		                 , SUBSTRING(tb8.snmpath,4) AS snmpath
+		                 , tb5.perno
+		                 , tb5.hpno
+		                 , tb5.join_gbn
+		                 , tb5.telno
+		                 , tb5.jikgub
+		                 , tb11.cd_vl_nm AS jikgub_nm
+		                 , tb5.jikchk
+		                 , tb12.cd_vl_nm AS jikchk_nm
+		                 , tb7.role_id
+		                 , tb5.email
+		                 , tb5.corp_email_addr
+		                 , tb5.zipcd
+		                 , tb5.addr1
+		                 , tb5.addr2
+		                 , tb5.empsta
+		                 , tb5.pay_gbn
+		                 , tb5.re_emp_cd
+		                 , tb9.emp_nm AS re_emp_nm
+		                 , tb5.rcrt_type
+		                 , tb5.lreg_ymd
+		                 , tb5.nreg_ymd
+		                 , tb5.vreg_ymd
+		                 , tb5.vreg_no
+		                 , tb5.areg_no
+		                 , tb5.areg_yn
+		                 , tb5.career_gbn
+		                 , tb5.ent_ymd
+						 , tb5.gent_ymd
+						 , tb5.end_ymd
+						 , tb5.out_ymd
+						 , tb5.gain_ymd
+						 , tb5.lost_ymd
+						 , tb5.bank
+						 , tb5.bk_id
+						 , tb5.owner
+						 , tb5.owner_relation
+						 , tb5.memo
+						 , tb5.file_name
+		 		         , CASE WHEN tb10.concurrent_count > 1 THEN 'Y'
+		                        ELSE 'N'
+		                    END AS concurrent_gubun	/* 겸직여부 */
+		                 , tb7.concurrent_idx
+						 , tb5.in_emp_cd
+						 , tb5.in_dtm
+						 , tb5.up_emp_cd
+						 , tb5.up_dtm
+					  FROM (SELECT *
+							  FROM tbin_empmst
+							 WHERE mb_id = #{mb_id}) tb5
+		   LEFT OUTER JOIN (SELECT * FROM tbsy_login WHERE mb_id = #{mb_id}) tb6
+						ON tb5.emp_cd = tb6.emp_cd
+		   LEFT OUTER JOIN (SELECT * FROM tbsy_user_role_map WHERE mb_id = #{mb_id} AND concurrent_idx = 1) tb7
+						ON tb5.emp_cd = tb7.emp_cd
+		   LEFT OUTER JOIN org_cte tb8
+						ON tb5.scd = tb8.scd
+		   LEFT OUTER JOIN (SELECT * FROM tbin_empmst WHERE mb_id = #{mb_id}) tb9 
+						ON tb5.re_emp_cd = tb9.emp_cd
+		   LEFT OUTER JOIN (SELECT emp_cd
+                               	 , COUNT(emp_cd) AS concurrent_count 
+                              FROM tbsy_user_role_map
+                           	 WHERE mb_id = #{mb_id}
+							 GROUP BY emp_cd) tb10	/* 겸직여부 */
+						ON tb5.emp_cd = tb10.emp_cd
+		   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'JIKGUB') tb11
+		                ON tb5.jikgub = tb11.cd_vl
+		   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'JIKCHK') tb12
+		                ON tb5.jikchk = tb12.cd_vl
+           WHERE 1 = 1
+             AND tb5.emp_cd NOT IN (<include refid="Comm.RoleExcepcion"/>)
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(role_id)'>
+             AND tb5.emp_cd NOT IN (SELECT emp_cd FROM tbsy_user_role_map WHERE mb_id = #{mb_id} AND role_id = #{role_id})	/* 이미 해당 권한이 등록된 사원은 안보이도록(겸직포함) */
+			</if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_SCD)'>
+			 AND (tb8.scd = #{SRCH_SCD} OR tb8.scdpath LIKE CONCAT('%> ',#{SRCH_SCD},' >%'))
+			</if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_JIKCHK)'>
+			 AND tb5.jikchk = #{SRCH_JIKCHK}
+			</if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_JIKGUB)'>
+			 AND tb5.jikgub = #{SRCH_JIKGUB}
+			</if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_EMPSTA)'>
+			 AND tb5.empsta = #{SRCH_EMPSTA}
+			</if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_EMP_VALUE)'>
+			 AND (  tb5.emp_nm LIKE CONCAT('%',#{SRCH_EMP_VALUE},'%')
+				 OR tb5.emp_cd LIKE CONCAT('%',UPPER(#{SRCH_EMP_VALUE}),'%')
+			 )
+			</if>
+		ORDER BY tb5.scd
+			   , tb5.emp_nm
+	</select>
+	
+	<sql id="selectInsaListSql">
+			/* insa-mapper.xml id="selectInsaListSql" 인사정보 리스트 조회 쿼리 */
+			<include refid="Comm.OrgTree"/>
+			SELECT tb7.seq               /* 일련번호    RE_EMP_CD    BIGINT        */
+                 , tb7.mb_id             /* 회사코드        VARCHAR(20)   */
+                 , tb7.emp_cd            /* 사원코드        VARCHAR(20)   */
+                 , tb7.emp_nm            /* 사원명          VARCHAR(20)   */
+                 , tb7.emp_nme           /* 사원영문명     VARCHAR(50)   */
+                 , tb10.login_id
+                 , tb7.scd               /* 조직코드        VARCHAR(20)   */
+                 , tb8.snmf
+                 , tb8.office_nm
+                 , tb7.perno             /* 주민등록번호    VARCHAR(4000) */
+                 , CASE WHEN ORACLE_NVL(tb7.perno, '') != '' THEN CONCAT(SUBSTRING(tb7.perno, 1, 8), '******')
+                        ELSE tb7.perno
+                    END AS perno_masking  /* 사원주민번호 마스킹 */
+                 , tb7.jikgub            /* 직급코드        VARCHAR(20)   */
+                 , tb19.cd_vl_nm AS jikgub_nm
+                 , tb7.jikchk            /* 직책코드        VARCHAR(20)   */
+                 , tb20.cd_vl_nm AS jikchk_nm
+                 , tb20.sort_no AS jikchk_sort_no
+                 , tb11.role_id
+                 , tb12.role_nm
+                 , tb7.telno             /* 집 전화번호     VARCHAR(15)   */
+                 , tb7.hpno              /* 핸드폰번호      VARCHAR(20)   */
+                 , tb7.extno             /* 내선번호        VARCHAR(20)   */
+                 , tb7.email             /* 이메일          VARCHAR(50)   */
+                 , tb7.corp_email_addr   /* 회사 이메일          VARCHAR(50)   */
+                 , tb7.zipcd             /* 우편번호        VARCHAR(7)    */
+                 , tb7.addr1             /* 자택주소        VARCHAR(200)  */
+                 , tb7.addr2             /* 자택주소상세    VARCHAR(200)  */
+                 , CONCAT(tb7.addr1, ' ', tb7.addr2) AS addr
+                 , tb7.empsta            /* 재직여부        VARCHAR(20)   */
+                 , tb24.cd_vl_nm AS empsta_nm 		 
+                 , tb7.insco_emp_cd_gbn  /* 자격구분        VARCHAR(1)    */
+                 , tb17.cd_vl_nm AS insco_emp_cd_gbn_nm
+                 , tb7.join_gbn          /* 입사구분        VARCHAR(20)   */
+                 <choose>
+                 	<when test="@kr.co.gnx.comm.util.CommUtil@isEquals(mb_id, 'GAMC')">
+                 , tb28.cd_vl_nm AS pay_gbn           /* 급여구분        VARCHAR(20)   */
+                 	</when>
+                 	<otherwise>
+                 , tb7.pay_gbn						 /* 급여구분        VARCHAR(20)   */
+                 	</otherwise>
+                 </choose>
+                 , tb7.rcrt_type         /* 유치방식        VARCHAR(1)    */
+                 , tb15.cd_vl_nm AS rcrt_typenm
+                 , tb7.re_emp_cd         /* 유치자 사원코드 VARCHAR(20)   */
+                 , tb13.emp_nm as re_emp_nm
+                 , tb14.snm AS re_emp_snm
+                 , tb7.lreg_ymd          /* 생보등록일      VARCHAR(10)   */
+                 , tb7.nreg_ymd          /* 손보등록일      VARCHAR(10)   */
+                 , tb7.lreg_out_ymd          /* 생보말소일      VARCHAR(10)   */
+                 , tb7.nreg_out_ymd          /* 손보말소일      VARCHAR(10)   */
+                 , tb7.lreg_insco_cd	   /* 생보등록사      VARCHAR(10)   */
+                 , tb22.insco_nm AS lreg_insco_nm
+	             , tb7.nreg_insco_cd	   /* 손보등록사      VARCHAR(10)   */
+                 , tb23.insco_nm AS nreg_insco_nm
+                 , tb7.vreg_ymd          /* 변액등록일      VARCHAR(10)   */
+                 , tb7.vreg_no
+                 , tb7.areg_no
+                 , tb7.areg_yn
+                 , tb25.cd_vl_nm AS areg_yn_nm
+                 , tb7.settlement_gbn
+                 , tb26.cd_vl_nm AS settlement_gbn_nm
+                 , tb7.career_gbn
+                 , tb21.cd_vl_nm AS career_gbn_nm
+                 , tb7.ent_ymd           /* 입사일자        VARCHAR(10)   */
+                 , tb7.gent_ymd          /* 위촉일자        VARCHAR(10)   */
+                 , tb7.apgent_ymd		 /* 적용위촉일자        VARCHAR(10)   */
+                 , tb7.end_ymd           /* 퇴사일자        VARCHAR(10)   */
+                 , tb7.out_ymd           /* 해촉일자        VARCHAR(10)   */
+                 , tb7.reentry_ymd		 /* 재입사일자      VARCHAR(10)   */
+                 , tb7.tax_elecno		 /* 세무전산번호 int */
+                 , tb7.gain_ymd
+                 , tb7.lost_ymd
+                 , tb7.bank              /* 은행코드        VARCHAR(20)   */
+                 , tb18.cd_vl_nm AS bank_nm
+                 , tb7.bk_id             /* 계좌번호        VARCHAR(66)   */
+                 , tb7.owner             /* 예금주          VARCHAR(50)   */
+                 , tb7.owner_relation    /* 예금주와의 관계 VARCHAR(20)   */
+                 , tb16.cd_vl_nm AS owner_relationnm
+                 , tb7.memo              /* 메모            VARCHAR(1000) */
+                 , tb7.file_name         /* 첨부파일명      VARCHAR(200)  */
+                 , tb7.in_emp_cd         /* 입력자사번      VARCHAR(20)   */
+                 , tb7.in_dtm            /* 입력일시        DATETIME      */
+                 , tb7.up_emp_cd         /* 수정자사번      VARCHAR(20)   */
+                 , tb7.up_dtm            /* 수정일시        DATETIME      */
+                 , tb7.out_reason
+                 , tb29.cd_vl_nm as out_reason_nm        /* 해촉사유        VARCHART(10)      */
+                 , tb7.start_sale_dtm 
+                 , tb27.appoint_ymd
+                 <if test="@kr.co.gnx.comm.util.CommUtil@isEquals(mb_id, 'ITX')">
+                 , tb7.bun_gbn           /* 분급 / 선지급 구분 */
+                 , tb30.cd_vl_nm AS bun_gbn_nm
+                 , tb7.earn_gbn           /* 적립여부 */
+                 , tb31.cd_vl_nm AS earn_gbn_nm
+                 </if>
+                 , CASE WHEN tb8.pscd IS NULL THEN tb8.snm
+                 		WHEN tb7.mb_id = 'AFG' THEN SUBSTRING(SUBSTRING(tb8.snmpath,4),tb9.rootlength+CHAR_LENGTH(fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 2))+6)
+                        ELSE SUBSTRING(SUBSTRING(tb8.snmpath,4),tb9.rootlength+4)
+                    END AS snmpath
+                 , SUBSTRING(tb8.scdpath,4) AS scdpath
+                 <if test='@kr.co.gnx.comm.util.CommUtil@isEmpty(queryStr)'>
+                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,4), ' > ', 1) AS snmpath1
+                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 2) AS snmpath2
+                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 3) AS snmpath3
+                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 4) AS snmpath4
+                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 5) AS snmpath5
+                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 6) AS snmpath6  
+                 </if>
+                 <if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(queryStr)'>
+                 ${queryStr}
+                 </if>
+                 , concat(tb13.emp_nm,'(', tb13.emp_cd, ')') as re_emp
+              FROM (SELECT *
+                      FROM tbin_empmst
+                     WHERE mb_id = #{mb_id}) tb7
+   LEFT OUTER JOIN org_cte tb8
+                ON tb7.scd = tb8.scd
+        INNER JOIN (SELECT CHAR_LENGTH(snm) as rootlength FROM tbin_scd WHERE mb_id = #{mb_id} AND pscd IS NULL) tb9
+                ON 1 = 1
+   LEFT OUTER JOIN (SELECT * FROM tbsy_login WHERE mb_id = #{mb_id}) tb10
+                ON tb7.emp_cd = tb10.emp_cd
+   LEFT OUTER JOIN (SELECT * FROM tbsy_user_role_map WHERE mb_id = #{mb_id} AND concurrent_idx = 1) tb11
+                ON tb7.emp_cd = tb11.emp_cd
+   LEFT OUTER JOIN (SELECT * FROM tbsy_roles_map WHERE mb_id = #{mb_id}) tb12
+                ON tb11.role_id = tb12.role_id
+   LEFT OUTER JOIN (SELECT * FROM tbin_empmst WHERE mb_id =#{mb_id}) tb13
+   				ON tb7.re_emp_cd = tb13.emp_cd
+   LEFT OUTER JOIN (SELECT * FROM tbin_scd WHERE mb_id = #{mb_id}) tb14
+                ON tb13.scd = tb14.scd
+   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE MB_ID = #{mb_id} AND grp_cmm_cd = 'RCRT_TYPE') tb15
+                ON tb7.rcrt_type = tb15.cd_vl
+   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE MB_ID = #{mb_id} AND grp_cmm_cd = 'OWNER_RELATION') tb16
+                ON tb7.owner_relation = tb16.cd_vl
+   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'INSCO_EMP_CD_GBN') tb17
+                ON tb7.insco_emp_cd_gbn = tb17.cd_vl
+   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'BANK') tb18
+                ON tb7.bank = tb18.cd_vl
+   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'JIKGUB') tb19
+                ON tb7.jikgub = tb19.cd_vl
+   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'JIKCHK') tb20
+                ON tb7.jikchk = tb20.cd_vl
+   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'CAREER_GBN') tb21
+                ON tb7.career_gbn = tb21.cd_vl
+   LEFT OUTER JOIN (SELECT * FROM tbcm_insco WHERE mb_id = #{mb_id}) tb22
+				ON tb7.lreg_insco_cd = tb22.insco_cd   
+   LEFT OUTER JOIN (SELECT * FROM tbcm_insco WHERE mb_id = #{mb_id}) tb23
+				ON tb7.nreg_insco_cd = tb23.insco_cd 
+   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'EMPSTA') tb24
+                ON tb7.empsta = tb24.cd_vl
+   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'AREG_YN') tb25
+                ON tb7.areg_yn = tb25.cd_vl   
+   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = 'AFG' AND grp_cmm_cd = 'SETTLEMENT_GBN') tb26
+                ON tb7.settlement_gbn = tb26.cd_vl  
+   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'PAY_GBN') tb28
+   				ON tb7.pay_gbn = tb28.cd_vl
+   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'OUT_REASON') tb29
+   				ON tb7.out_reason = tb29.cd_vl
+   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'BUN_GBN') tb30
+                ON tb7.bun_gbn = tb30.cd_vl 
+      LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'EARN_GBN') tb31
+                ON tb7.earn_gbn = tb31.cd_vl              			
+   LEFT OUTER JOIN (SELECT tb7.emp_cd, tb7.mb_id,  MAX(tb8.appoint_ymd) AS appoint_ymd
+                       FROM (SELECT * FROM tbin_empmst WHERE mb_id = 'AFG') tb7
+            LEFT OUTER JOIN tbin_appoint tb8
+                         ON tb7.mb_id = tb8.mb_id
+                        AND tb7.emp_cd = tb8.emp_cd
+                   GROUP BY tb8.emp_cd) tb27
+		        ON tb7.mb_id = tb27.mb_id
+			   AND tb7.emp_cd = tb27.emp_cd                        
+			 WHERE 1 = 1
+			  AND tb7.emp_cd NOT IN (<include refid="Comm.RoleExcepcion"/>)
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEquals(view_auth, "ADMIN") and @kr.co.gnx.comm.util.CommUtil@isNotEmpty(view_auth)'>
+              AND tb7.emp_cd IN (<include refid="Comm.menuEmpCdRole"/>)
+            </if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(emp_cd)'>
+			   AND tb7.emp_cd = #{emp_cd}
+			</if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_SCD)'>
+				AND CONCAT(tb8.scdpath,' >') LIKE CONCAT('%> ',#{SRCH_SCD},' >%')
+			</if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_JIKCHK)'>
+				AND tb7.jikchk = #{SRCH_JIKCHK}
+			</if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_JIKGUB)'>
+				AND tb7.jikgub = #{SRCH_JIKGUB}
+			</if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_ROLE_ID)'>
+				AND tb11.role_id = #{SRCH_ROLE_ID}
+			</if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_EMPSTA)'>
+				AND tb7.empsta = #{SRCH_EMPSTA}
+			</if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_PAY_GBN)'>
+				AND tb7.pay_gbn = #{SRCH_PAY_GBN}
+			</if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_OFFICE)'>
+			   AND tb8.office_nm LIKE CONCAT('%',#{SRCH_OFFICE},'%')
+			</if>
+
+
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_START_VALUE)'>
+				<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(SRCH_TERM, "01")'>    <!-- 입사일 -->
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_END_VALUE)'>
+					AND tb7.ent_ymd BETWEEN #{SRCH_TERM_START_VALUE} AND #{SRCH_TERM_END_VALUE}
+					</if>  
+					<if test='@kr.co.gnx.comm.util.CommUtil@isEmpty(SRCH_TERM_END_VALUE)'>
+					<![CDATA[ AND tb7.ent_ymd >= #{SRCH_TERM_START_VALUE} ]]>
+					</if>		
+				</if>
+				<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(SRCH_TERM, "02")'>    <!-- 위촉일 -->
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_END_VALUE)'>
+					AND tb7.gent_ymd BETWEEN #{SRCH_TERM_START_VALUE} AND #{SRCH_TERM_END_VALUE}
+					</if>  
+					<if test='@kr.co.gnx.comm.util.CommUtil@isEmpty(SRCH_TERM_END_VALUE)'>
+					<![CDATA[ AND tb7.gent_ymd >= #{SRCH_TERM_START_VALUE} ]]>
+					</if>	
+				</if>
+				<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(SRCH_TERM, "03")'>    <!-- 해촉일 -->
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_END_VALUE)'>
+					AND tb7.end_ymd BETWEEN #{SRCH_TERM_START_VALUE} AND #{SRCH_TERM_END_VALUE}
+					</if>  
+					<if test='@kr.co.gnx.comm.util.CommUtil@isEmpty(SRCH_TERM_END_VALUE)'>
+					<![CDATA[ AND tb7.end_ymd >= #{SRCH_TERM_START_VALUE} ]]>
+					</if>	
+				</if>
+				<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(SRCH_TERM, "04")'>    <!-- 영업시작일 -->
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_END_VALUE)'>
+					AND tb7.start_sale_dtm BETWEEN #{SRCH_TERM_START_VALUE} AND #{SRCH_TERM_END_VALUE}
+					</if>  
+					<if test='@kr.co.gnx.comm.util.CommUtil@isEmpty(SRCH_TERM_END_VALUE)'>
+					<![CDATA[ AND tb7.start_sale_dtm >= #{SRCH_TERM_START_VALUE} ]]>
+					</if>	
+				</if>
+			</if>
+			<if test='@kr.co.gnx.comm.util.CommUtil@isEmpty(SRCH_TERM_START_VALUE)'>
+				<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(SRCH_TERM, "01")'>    <!-- 입사일 -->
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_END_VALUE)'>
+					<![CDATA[ AND tb7.ent_ymd <= #{SRCH_TERM_END_VALUE} ]]>
+					</if>  	
+				</if>
+				<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(SRCH_TERM, "02")'>    <!-- 위촉일 -->
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_END_VALUE)'>
+					<![CDATA[ AND tb7.gent_ymd <=  #{SRCH_TERM_END_VALUE} ]]>
+					</if>  
+				</if>
+				<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(SRCH_TERM, "03")'>    <!-- 해촉일 -->
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_END_VALUE)'>
+					<![CDATA[ AND tb7.end_ymd <=  #{SRCH_TERM_END_VALUE} ]]>
+					</if>  
+				</if>
+				<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(SRCH_TERM, "04")'>    <!-- 영업시작일 -->
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_END_VALUE)'>
+					<![CDATA[ AND tb7.start_sale_dtm <=  #{SRCH_TERM_END_VALUE} ]]>
+					</if>  
+				</if>
+			</if>
+			
+			<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_EMP_VALUE)'>
+				AND (  tb7.emp_nm LIKE CONCAT('%',#{SRCH_EMP_VALUE},'%')
+					OR tb7.emp_cd LIKE CONCAT('%',UPPER(#{SRCH_EMP_VALUE}),'%')
+					OR tb7.perno = #{SRCH_EMP_VALUE} /* 개인정보보호를 위해 정확히 기입했을때만 조회 */
+					OR tb7.hpno LIKE CONCAT('%',#{SRCH_EMP_VALUE},'%')
+				)
+			</if>			
+			<if test="@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SEARCH_WORD)">
+			<!-- 문자전송 초성검색 -->
+			 <choose>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "AZ")'>
+				<![CDATA[ AND tb7.emp_nm BETWEEN 'A' AND 'Z' ]]>
+				</when>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "ㄱ")'>
+				<![CDATA[ AND tb7.emp_nm BETWEEN '가' AND '나' ]]>
+				</when>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "ㄴ")'>
+				<![CDATA[ AND tb7.emp_nm BETWEEN '나' AND '다' ]]>
+				</when>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "ㄷ")'>
+				<![CDATA[ AND tb7.emp_nm BETWEEN '다' AND '라' ]]>
+				</when>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "ㄹ")'>
+				<![CDATA[ AND tb7.emp_nm BETWEEN '라' AND '마' ]]>
+				</when>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "ㅁ")'>
+				<![CDATA[ AND tb7.emp_nm BETWEEN '마' AND '바' ]]>
+				</when>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "ㅂ")'>
+				<![CDATA[ AND tb7.emp_nm BETWEEN '바' AND '사' ]]>
+				</when>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "ㅅ")'>
+				<![CDATA[ AND tb7.emp_nm BETWEEN '사' AND '아' ]]>
+				</when>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "ㅇ")'>
+				<![CDATA[ AND tb7.emp_nm BETWEEN '아' AND '자' ]]>
+				</when>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "ㅈ")'>
+				<![CDATA[ AND tb7.emp_nm BETWEEN '자' AND '차' ]]>
+				</when>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "ㅊ")'>
+				<![CDATA[ AND tb7.emp_nm BETWEEN '차' AND '카' ]]>
+				</when>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "ㅋ")'>
+				<![CDATA[ AND tb7.emp_nm BETWEEN '카' AND '타' ]]>
+				</when>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "ㅌ")'>
+				<![CDATA[ AND tb7.emp_nm BETWEEN '타' AND '파' ]]>
+				</when>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "ㅍ")'>
+				<![CDATA[ AND tb7.emp_nm BETWEEN '파' AND '하' ]]>
+				</when>
+				<when test='@kr.co.gnx.comm.util.CommUtil@isEquals(SEARCH_WORD, "ㅎ")'>
+				<![CDATA[ AND tb7.emp_nm >= '하' ]]>
+				</when>
+			</choose>
+		</if>
+		<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(emp_cd_arr)'>
+			AND tb7.emp_cd IN <foreach collection="emp_cd_arr"  item="item" open="("  separator="," close=")"><![CDATA[  #{item} ]]></foreach>
+		</if>
+	</sql>
+	
+	<select id="selectInsaList" resultType="hmap" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml selectInsaListPaging 사원 리스트 페이징 */
+		<include refid="selectInsaListSql"/>
+	</select>
+	
+	<select id="selectInsaListPaging" resultType="hmap" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml selectInsaListPaging 사원 리스트 페이징 */
+		<include refid="Comm.PagingStart"/>
+		<include refid="selectInsaListSql"/>
+	  	<include refid="Comm.PagingEnd"/>
+	</select>
+	
+	<select id="selectEmpView" resultType="hmap" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml selectEmpView 사원정보 조회 */
+				<include refid="Comm.OrgTree"/>
+				SELECT tb7.seq               /* 일련번호    RE_EMP_CD    BIGINT        */
+                     , tb7.mb_id             /* 회사코드        VARCHAR(20)   */
+                     , tb7.emp_cd            /* 사원코드        VARCHAR(20)   */
+                     , tb7.emp_nm            /* 사원명          VARCHAR(20)   */
+                     , tb7.emp_nme           /* 사원영문명     VARCHAR(50)   */
+                     , tb10.login_id
+                     , tb7.scd               /* 조직코드        VARCHAR(20)   */
+                     , tb8.snm
+                     , tb7.perno             /* 주민등록번호    VARCHAR(4000) */
+                     , tb7.birth             /* 생년월일   	   VARCHAR(10)   */
+                     , tb7.jikgub            /* 직급코드        VARCHAR(20)   */
+                     , tb7.jikchk            /* 직책코드        VARCHAR(20)   */
+                     , tb17.cd_vl_nm AS jikgub_nm        /* 직급이름        VARCHAR(20)   */
+                     , tb18.cd_vl_nm AS jikchk_nm        /* 직책이름        VARCHAR(20)   */
+                     , tb11.role_id
+                     , tb12.role_nm
+                     , tb7.telno             /* 집 전화번호     VARCHAR(15)   */
+                     , tb7.hpno              /* 핸드폰번호      VARCHAR(20)   */
+                     , tb7.extno             /* 내선번호        VARCHAR(20)   */
+                     , tb7.email             /* 이메일          VARCHAR(50)   */
+                     , tb7.corp_email_addr             /* 이메일          VARCHAR(50)   */
+                     , tb7.zipcd             /* 우편번호        VARCHAR(7)    */
+                     , tb7.addr1             /* 자택주소        VARCHAR(200)  */
+                     , tb7.addr2             /* 자택주소상세    VARCHAR(200)  */
+                     , tb7.empsta            /* 재직여부        VARCHAR(20)   */
+                     , tb21.cd_vl_nm AS empsta_nm
+                     , tb7.insco_emp_cd_gbn  /* 자격구분        VARCHAR(1)    */
+                     , tb16.cd_vl_nm AS insco_emp_cd_gbn_nm
+                     , tb7.join_gbn          /* 입사구분        VARCHAR(20)   */
+                     , tb7.pay_gbn           /* 급여구분        VARCHAR(20)   */
+                     , tb7.rcrt_type         /* 유치방식        VARCHAR(1)    */
+                     , tb7.re_emp_cd         /* 유치자 사원코드 VARCHAR(20)   */
+                     , tb13.emp_nm AS re_emp_nm
+                     , tb14.snm AS re_emp_snm
+                     , tb13.jikgub AS re_jikgub
+                     , tb7.lreg_ymd          /* 생보등록일      VARCHAR(10)   */
+                     , tb7.nreg_ymd          /* 손보등록일      VARCHAR(10)   */
+                     , tb7.lreg_out_ymd          /* 생보말소일      VARCHAR(10)   */
+                     , tb7.nreg_out_ymd          /* 손보말소일      VARCHAR(10)   */
+                     , tb7.lreg_insco_cd	   /* 생보등록사      VARCHAR(10)   */
+                     , tb23.insco_nm AS lreg_insco_nm
+		             , tb7.nreg_insco_cd	   /* 손보등록사      VARCHAR(10)   */
+                     , tb24.insco_nm AS nreg_insco_nm
+                     
+		             , tb7.areg_yn	   /* 협회등록여부      VARCHAR(10)   */
+                     , tb25.cd_vl_nm AS areg_yn_nm
+		             , tb7.settlement_gbn	   /* 정착지원수수료      VARCHAR(10)   */
+                     , tb26.cd_vl_nm AS settlement_gbn_nm
+                     
+                     , tb7.vreg_ymd          /* 변액등록일      VARCHAR(10)   */
+                     , tb7.vreg_no
+                     , tb7.areg_no
+                     , tb7.areg_yn
+                     , tb7.career_gbn
+                     , tb22.cd_vl_nm AS career_gbn_nm
+                     , tb7.ent_ymd           /* 입사일자        VARCHAR(10)   */
+                     , tb7.gent_ymd          /* 위촉일자        VARCHAR(10)   */
+                     , tb7.apgent_ymd  		 /* 적용위촉일자        VARCHAR(10)   */
+                     , tb7.reentry_ymd       /* 재입사일자      VARCHAR(10)   */
+                     , tb7.end_ymd           /* 퇴사일자        VARCHAR(10)   */
+                     , tb7.out_ymd           /* 해촉일자        VARCHAR(10)   */
+                     , tb7.gain_ymd          /* 취득일        VARCHAR(10)   */
+                     , tb7.lost_ymd           /* 상실일        VARCHAR(10)   */
+                     , tb7.bank              /* 은행코드        VARCHAR(20)   */
+                     , tb7.tax_elecno		 /* 세무전산번호 int			   */
+                     , tb19.cd_vl_nm AS bank_nm
+                     , tb7.bk_id             /* 계좌번호        VARCHAR(66)   */
+                     , tb7.owner             /* 예금주          VARCHAR(50)   */
+                     , tb7.owner_relation    /* 예금주와의 관계 VARCHAR(20)   */
+                     , tb20.cd_vl_nm AS owner_relation_nm
+                     , tb7.movable_ratio_gbn /* 가동율 포함여부 구분 */
+                     , tb7.memo              /* 메모            VARCHAR(1000) */
+                     , tb7.file_name         /* 첨부파일명      VARCHAR(200)  */
+                     , tb7.in_emp_cd         /* 입력자사번      VARCHAR(20)   */
+                     , DATE_FORMAT(tb7.in_dtm, '%Y-%m-%d') AS in_dtm            /* 입력일시        DATETIME      */
+                     , tb7.up_emp_cd         /* 수정자사번      VARCHAR(20)   */
+                     , DATE_FORMAT(tb7.up_dtm, '%Y-%m-%d') AS up_dtm            /* 수정일시        DATETIME      */
+                 	 , CASE WHEN tb8.pscd IS NULL THEN tb8.snm
+                        	ELSE SUBSTRING(SUBSTRING(tb8.snmpath,4),tb9.rootlength+4)
+                    	END AS snmpath
+                 	 , SUBSTRING(tb8.scdpath,4) AS scdpath
+                 	 , fn_get_pathroot(SUBSTRING(tb8.snmpath,4), ' > ', 1) AS snmpath1
+                 	 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 2) AS snmpath2
+                 	 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 3) AS snmpath3
+                 	 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 4) AS snmpath4
+                  	 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 5) AS snmpath5
+	 		         , CASE WHEN tb15.concurrent_count > 1 THEN 'Y'
+	                        ELSE 'N'
+	                    END AS concurrent_gubun	/* 겸직여부 */
+	                 , tb11.concurrent_idx
+	                 , tb7.out_reason /* 해촉사유 */
+                     , tb29.cd_vl_nm as out_reason_nm        /* 해촉사유        VARCHART(10)      */
+                     , tb7.start_sale_dtm
+                     , tb7.bun_gbn
+                     , tb30.cd_vl_nm AS bun_gbn_nm
+                     , tb7.earn_gbn
+                     , tb31.cd_vl_nm AS earn_gbn_nm
+              	  FROM (SELECT *
+	                      FROM tbin_empmst
+	                     WHERE mb_id = #{mb_id}) tb7
+   	   LEFT OUTER JOIN org_cte tb8
+                	ON tb7.scd = tb8.scd
+        	INNER JOIN (SELECT CHAR_LENGTH(snm) as rootlength FROM tbin_scd WHERE mb_id = #{mb_id} AND pscd IS NULL) tb9
+                	ON 1 = 1
+   	   LEFT OUTER JOIN (SELECT *
+                      	  FROM tbsy_login
+                     	 WHERE mb_id = #{mb_id}) tb10
+                	ON tb7.emp_cd = tb10.emp_cd
+   	   LEFT OUTER JOIN (SELECT * FROM tbsy_user_role_map WHERE mb_id = #{mb_id} AND concurrent_idx = 1) tb11
+                	ON tb7.emp_cd = tb11.emp_cd
+   	   LEFT OUTER JOIN (SELECT * FROM tbsy_roles_map WHERE mb_id = #{mb_id}) tb12
+                	ON tb11.role_id = tb12.role_id
+   	   LEFT OUTER JOIN (SELECT * FROM tbin_empmst
+                 WHERE mb_id =#{mb_id}) tb13
+                	ON tb7.re_emp_cd = tb13.emp_cd
+   	   LEFT OUTER JOIN (SELECT *
+                      	  FROM tbin_scd
+                     	 WHERE mb_id = #{mb_id}) tb14
+                	ON tb13.scd = tb14.scd
+       LEFT OUTER JOIN (SELECT emp_cd
+                             , COUNT(emp_cd) AS concurrent_count 
+                          FROM tbsy_user_role_map
+                         WHERE mb_id = #{mb_id}
+			             GROUP BY emp_cd) tb15	/* 겸직여부 */
+                    ON tb7.emp_cd = tb15.emp_cd
+       LEFT OUTER JOIN (SELECT *
+                          FROM tbcm_common_code
+                         WHERE mb_id = #{mb_id}
+                           AND grp_cmm_cd = 'INSCO_EMP_CD_GBN') tb16
+                    ON tb7.insco_emp_cd_gbn = tb16.cd_vl
+                    
+       LEFT OUTER JOIN (SELECT *
+                          FROM tbcm_common_code
+                         WHERE mb_id = #{mb_id}
+                           AND grp_cmm_cd = 'AREG_YN') tb25
+                    ON tb7.areg_yn = tb25.cd_vl
+       LEFT OUTER JOIN (SELECT *
+                          FROM tbcm_common_code
+                         WHERE mb_id = #{mb_id}
+                           AND grp_cmm_cd = 'SETTLEMENT_GBN') tb26
+                    ON tb7.settlement_gbn = tb26.cd_vl
+                    
+       LEFT OUTER JOIN (SELECT *
+                          FROM tbcm_common_code
+                         WHERE mb_id = #{mb_id}
+                           AND grp_cmm_cd = 'JIKGUB') tb17
+                    ON tb7.jikgub = tb17.cd_vl
+       LEFT OUTER JOIN (SELECT *
+                          FROM tbcm_common_code
+                         WHERE mb_id = #{mb_id}
+                           AND grp_cmm_cd = 'JIKCHK') tb18
+                    ON tb7.jikchk = tb18.cd_vl
+	   LEFT OUTER JOIN (SELECT *
+                          FROM tbcm_common_code
+                         WHERE mb_id = #{mb_id}
+                           AND grp_cmm_cd = 'BANK') tb19
+                    ON tb7.bank = tb19.cd_vl
+		LEFT OUTER JOIN (SELECT *
+                          FROM tbcm_common_code
+                         WHERE mb_id = #{mb_id}
+                           AND grp_cmm_cd = 'OWNER_RELATION') tb20
+                    ON tb7.owner_relation = tb20.cd_vl
+		LEFT OUTER JOIN (SELECT *
+                          FROM tbcm_common_code
+                         WHERE mb_id = #{mb_id}
+                           AND grp_cmm_cd = 'EMPSTA') tb21
+                    ON tb7.empsta = tb21.cd_vl
+		LEFT OUTER JOIN (SELECT *
+                          FROM tbcm_common_code
+                         WHERE mb_id = #{mb_id}
+                           AND grp_cmm_cd = 'CAREER_GBN') tb22
+                    ON tb7.career_gbn = tb22.cd_vl
+        LEFT OUTER JOIN (SELECT * FROM tbcm_insco WHERE mb_id = #{mb_id}) tb23
+				    ON tb7.lreg_insco_cd = tb23.insco_cd   
+    	LEFT OUTER JOIN (SELECT * FROM tbcm_insco WHERE mb_id = #{mb_id}) tb24
+				    ON tb7.nreg_insco_cd = tb24.insco_cd  
+        LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'OUT_REASON') tb29
+   				     ON tb7.out_reason = tb29.cd_vl  
+   	   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'BUN_GBN') tb30
+   				     ON tb7.bun_gbn = tb30.cd_vl  		 
+        LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'EARN_GBN') tb31
+   				     ON tb7.earn_gbn = tb31.cd_vl  				         
+                 WHERE tb7.mb_id = #{mb_id}
+                   AND tb7.emp_cd = #{emp_cd}
+	</select>
+	
+	<select id="selectEmpcdView"  resultType="java.lang.String" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml selectEmpcdView 사원코드 세팅 */
+		SELECT fn_get_insa_empcd(#{mb_id}, #{pay_gbn}, 1, #{emp_cd})
+	</select>
+	
+	<!-- 인사 등록 -->
+	<insert id="insertInsa" parameterType="kr.co.gnx.insa.InsaVO" useGeneratedKeys="true" keyProperty="seq">
+		/* insa-mapper.xml insertInsa 인사 등록 */
+		INSERT
+		  INTO tbin_empmst /* [IN][인사] 인사마스터 */
+		     ( mb_id             /* 회사코드        VARCHAR(20)   */
+		     , emp_cd            /* 사원코드        VARCHAR(20)   */
+		     , emp_nm            /* 사원명          VARCHAR(20)   */
+		     , emp_nme           /* 사원영문명     VARCHAR(50)   */
+		     , scd               /* 조직코드        VARCHAR(20)   */
+		     , perno             /* 주민등록번호    VARCHAR(4000) */
+		     , birth             /* 생년월일   	   VARCHAR(10)   */
+		     , jikgub            /* 직급코드        VARCHAR(20)   */
+		     , jikchk            /* 직책코드        VARCHAR(20)   */
+		     , telno             /* 집 전화번호     VARCHAR(15)   */
+		     , hpno              /* 핸드폰번호      VARCHAR(20)   */
+		     , extno             /* 내선번호        VARCHAR(20)   */
+		     , email             /* 이메일          VARCHAR(50)   */
+		     , corp_email_addr             /* 이메일          VARCHAR(50)   */
+		     , zipcd             /* 우편번호        VARCHAR(7)    */
+		     , addr1             /* 자택주소        VARCHAR(200)  */
+		     , addr2             /* 자택주소상세    VARCHAR(200)  */
+		     , empsta            /* 재직여부        VARCHAR(20)   */
+		     , insco_emp_cd_gbn  /* 자격구분        VARCHAR(1)    */
+		     , join_gbn          /* 입사구분        VARCHAR(20)   */
+		     , pay_gbn           /* 급여구분        VARCHAR(20)   */
+		     , rcrt_type         /* 유치방식        VARCHAR(1)    */
+		     , re_emp_cd         /* 유치자 사원코드 VARCHAR(20)   */
+		     , lreg_ymd          /* 생보등록일      VARCHAR(10)   */
+		     , lreg_out_ymd      /* 생보말소일      VARCHAR(10)   */
+		     , lreg_insco_cd	 /* 생보등록사      VARCHAR(20)   */
+		     , nreg_ymd          /* 손보등록일      VARCHAR(10)   */
+		     , nreg_out_ymd      /* 손보말소일      VARCHAR(10)   */
+		     , nreg_insco_cd	 /* 손보등록사      VARCHAR(20)   */
+		     , vreg_ymd          /* 변액등록일      VARCHAR(10)   */
+		     , vreg_no			 /* 변액등록번호  INT */
+		     , areg_no			 /* 협회등록번호  varchar(30) */
+		     , areg_yn			 /* 협회등록여부  varchar(10) */
+		     , career_gbn        /* 경력여부       varchar(30) */
+		     , ent_ymd           /* 입사일자        VARCHAR(10)   */
+		     , gent_ymd          /* 위촉일자        VARCHAR(10)   */
+		     , apgent_ymd		 /* 적용위촉일자        VARCHAR(10)   */
+		     , reentry_ymd       /* 재입사일자      VARCHAR(10)   */
+		     , end_ymd           /* 퇴사일자        VARCHAR(10)   */
+		     , out_ymd           /* 해촉일자        VARCHAR(10)   */
+		     , tax_elecno		 /* 세무전산번호 int   */
+		     , gain_ymd			 /* 취득일        VARCHAR(10)   */
+		     , lost_ymd			 /* 상실일        VARCHAR(10)   */	
+		     , bank              /* 은행코드        VARCHAR(20)   */
+		     , bk_id             /* 계좌번호        VARCHAR(66)   */
+		     , owner             /* 예금주          VARCHAR(50)   */
+		     , owner_relation    /* 예금주와의 관계 VARCHAR(20)   */
+		     , movable_ratio_gbn /* 가동율 포함여부 구분 */
+		     , memo              /* 메모            VARCHAR(1000) */
+		     , file_name         /* 첨부파일명      VARCHAR(200)  */
+		     , in_emp_cd         /* 입력자사번      VARCHAR(20)   */
+		     , in_dtm            /* 입력일시        DATETIME      */
+		     , up_emp_cd         /* 수정자사번      VARCHAR(20)   */
+		     , up_dtm            /* 수정일시        DATETIME      */
+	    	 <if test='@kr.co.gnx.comm.util.CommUtil@isEquals(mb_id, "AFG")'>
+			 , settlement_gbn
+			 , out_reason
+			 </if>
+	    	 <if test='@kr.co.gnx.comm.util.CommUtil@isEquals(mb_id, "NIKE")'>
+			 , start_sale_dtm
+			 </if>
+			 <if test='@kr.co.gnx.comm.util.CommUtil@isEquals(mb_id, "ITX")'>
+			 , bun_gbn           /* 선지급, 분급      VARCHAR(20)  */
+			 , earn_gbn           /* 적립여부     VARCHAR(20)  */
+			 </if>
+			 
+		     )
+		VALUES
+			 ( #{mb_id}				/* 회사코드        VARCHAR(20)   */
+			 , #{emp_cd}			/* 사원코드        VARCHAR(20)   */
+			 , #{emp_nm}			/* 사원명          VARCHAR(20)   */
+			 , #{emp_nme}			/* 사원영문명        VARCHAR(50)   */
+			 , #{scd}				/* 조직코드        VARCHAR(20)   */
+			 , #{perno}				/* 주민등록번호    VARCHAR(4000) */
+			 , #{birth}             /* 생년월일   	   VARCHAR(10)   */
+			 , #{jikgub}			/* 직급코드        VARCHAR(20)   */
+			 , #{jikchk}			/* 직책코드        VARCHAR(20)   */
+			 , #{telno}				/* 집 전화번호     VARCHAR(15)   */
+			 , #{hpno}				/* 핸드폰번호      VARCHAR(20)   */
+			 , #{extno}				/* 내선번호        VARCHAR(20)   */
+			 , #{email}				/* 이메일          VARCHAR(50)   */
+			 , #{corp_email_addr}				/* 이메일          VARCHAR(50)   */
+			 , #{zipcd}				/* 우편번호        VARCHAR(7)    */
+			 , #{addr1}				/* 자택주소        VARCHAR(200)  */
+			 , #{addr2}				/* 자택주소상세    VARCHAR(200)  */
+			 , #{empsta}			/* 재직여부        VARCHAR(20)   */
+			 , #{insco_emp_cd_gbn}  /* 자격구분        VARCHAR(1)   */
+			 , #{join_gbn}   		/* 입사구분        VARCHAR(20)   */
+			 , #{pay_gbn}   		/* 급여구분        VARCHAR(20)   */
+			 , #{rcrt_type}  		/* 유치방식        VARCHAR(1)    */
+			 , #{re_emp_cd}  		/* 유치자 사원코드 VARCHAR(20)   */
+			 , #{lreg_ymd}          /* 생보등록일      VARCHAR(10)   */
+			 , #{lreg_out_ymd}      /* 생보말소일      VARCHAR(10)   */
+		     , #{lreg_insco_cd}	    /* 생보등록사      VARCHAR(20)   */
+		     , #{nreg_ymd}          /* 손보등록일      VARCHAR(10)   */
+		     , #{nreg_out_ymd}      /* 손보말소일      VARCHAR(10)   */
+		     , #{nreg_insco_cd}  	/* 손보등록사      VARCHAR(20)   */
+			 , #{vreg_ymd}   		/* 변액등록일      VARCHAR(10)   */
+			 , #{vreg_no}    		/* 변액등록번호   INT*/
+			 , #{areg_no}    		/* 협회등록번호  varchar(30) */
+			 , #{areg_yn}			/* 협회등록여부  varchar(10) */
+		     , #{career_gbn}        /* 경력여부       varchar(30) */
+			 , #{ent_ymd}   		/* 입사일자        VARCHAR(10)   */
+			 , #{gent_ymd}   		/* 위촉일자        VARCHAR(10)   */
+			 , #{apgent_ymd} 		/* 적용위촉일자        VARCHAR(10)   */
+			 , #{reentry_ymd}       /* 재입사일자      VARCHAR(10)   */
+			 , #{end_ymd}   		/* 퇴사일자        VARCHAR(10)   */
+			 , #{out_ymd}   		/* 해촉일자        VARCHAR(10)   */
+			 , CASE 
+			        WHEN #{mb_id} = 'FCN' AND  #{scd} != 'T0033'  
+			        THEN (SELECT max(cast(tax_elecno as unsigned))+1 FROM tbin_empmst tb1 WHERE mb_id = #{mb_id})		
+			        ELSE NVL(#{tax_elecno}, 0) END    /* 세무전산번호 int   */
+			 , #{gain_ymd}			/* 취득일		   VARCHAR(10)   */
+			 , #{lost_ymd}			/* 상실일		   VARCHAR(10)   */
+			 , #{bank}   			/* 은행코드        VARCHAR(20)   */
+			 , #{bk_id}   			/* 계좌번호        VARCHAR(66)   */
+			 , #{owner}   			/* 예금주          VARCHAR(50)   */
+			 , #{owner_relation}	/* 예금주와의 관계 VARCHAR(20)   */
+			 , #{movable_ratio_gbn} /* 가동율 포함여부 구분 */
+			 , #{memo}				/* 메모            VARCHAR(1000) */
+			 , #{file_name}			/* 첨부파일명      VARCHAR(200)  */
+			 , #{in_emp_cd}			/* 입력자사번      VARCHAR(20)   */
+			 , now()				/* 입력일시        DATETIME      */
+			 , null					/* 수정자사번      VARCHAR(20)   */
+			 , null					/* 수정일시        DATETIME      */
+	    	 <if test='@kr.co.gnx.comm.util.CommUtil@isEquals(mb_id, "AFG")'>
+			 , #{settlement_gbn}
+			 , #{out_reason}
+			 </if>
+	    	 <if test='@kr.co.gnx.comm.util.CommUtil@isEquals(mb_id, "NIKE")'>
+			 , #{start_sale_dtm}
+			 </if>
+			  <if test='@kr.co.gnx.comm.util.CommUtil@isEquals(mb_id, "ITX")'>
+			 , #{bun_gbn}
+			 , #{earn_gbn}
+			 </if>
+			 )
+	</insert>
+	
+	<!-- 인사 등록 -->
+	<insert id="insertInsaMap" parameterType="hmap" useGeneratedKeys="true" keyProperty="seq">
+		/* insa-mapper.xml insertInsaMap 인사 등록 */
+		INSERT
+		  INTO tbin_empmst /* [IN][인사] 인사마스터 */
+		     ( mb_id             /* 회사코드        VARCHAR(20)   */
+		     , emp_cd            /* 사원코드        VARCHAR(20)   */
+		     , emp_nm            /* 사원명          VARCHAR(20)   */
+		     , emp_nme           /* 사원영문명     VARCHAR(50)   */
+		     , scd               /* 조직코드        VARCHAR(20)   */
+		     , perno             /* 주민등록번호    VARCHAR(4000) */
+		     , birth             /* 생년월일   	   VARCHAR(10)   */
+		     , jikgub            /* 직급코드        VARCHAR(20)   */
+		     , jikchk            /* 직책코드        VARCHAR(20)   */
+		     , telno             /* 집 전화번호     VARCHAR(15)   */
+		     , hpno              /* 핸드폰번호      VARCHAR(20)   */
+		     , extno             /* 내선번호        VARCHAR(20)   */
+		     , email             /* 이메일          VARCHAR(50)   */
+		     , corp_email_addr             /* 이메일          VARCHAR(50)   */
+		     , zipcd             /* 우편번호        VARCHAR(7)    */
+		     , addr1             /* 자택주소        VARCHAR(200)  */
+		     , addr2             /* 자택주소상세    VARCHAR(200)  */
+		     , empsta            /* 재직여부        VARCHAR(20)   */
+		     , insco_emp_cd_gbn  /* 자격구분        VARCHAR(1)    */
+		     , join_gbn          /* 입사구분        VARCHAR(20)   */
+		     , pay_gbn           /* 급여구분        VARCHAR(20)   */
+		     , rcrt_type         /* 유치방식        VARCHAR(1)    */
+		     , re_emp_cd         /* 유치자 사원코드 VARCHAR(20)   */
+		     , lreg_ymd          /* 생보등록일      VARCHAR(10)   */
+		     , nreg_ymd          /* 손보등록일      VARCHAR(10)   */
+		     , vreg_ymd          /* 변액등록일      VARCHAR(10)   */
+		     , vreg_no			 /* 변액등록번호  INT */
+		     , areg_no			 /* 협회등록번호  varchar(30) */
+		     , areg_yn			 /* 협회등록여부  varchar(10) */
+		     , career_gbn        /* 경력여부       varchar(30) */
+		     , ent_ymd           /* 입사일자        VARCHAR(10)   */
+		     , gent_ymd          /* 위촉일자        VARCHAR(10)   */
+		     , reentry_ymd       /* 재입사일자      VARCHAR(10)   */
+		     , end_ymd           /* 퇴사일자        VARCHAR(10)   */
+		     , out_ymd           /* 해촉일자        VARCHAR(10)   */
+		     , bank              /* 은행코드        VARCHAR(20)   */
+		     , bk_id             /* 계좌번호        VARCHAR(66)   */
+		     , owner             /* 예금주          VARCHAR(50)   */
+		     , owner_relation    /* 예금주와의 관계 VARCHAR(20)   */
+		     , memo              /* 메모            VARCHAR(1000) */
+		     , file_name         /* 첨부파일명      VARCHAR(200)  */
+		     , in_emp_cd         /* 입력자사번      VARCHAR(20)   */
+		     , in_dtm            /* 입력일시        DATETIME      */
+		     , up_emp_cd         /* 수정자사번      VARCHAR(20)   */
+		     , up_dtm            /* 수정일시        DATETIME      */
+		     )
+		VALUES
+                ( #{MB_ID}   	/* 회사코드        VARCHAR(20)   */
+                , #{EMP_CD}   	/* 사원코드        VARCHAR(20)   */
+                , #{EMP_NM}   	/* 사원명          VARCHAR(20)   */
+                , #{EMP_NME}  	/* 사원영문명        VARCHAR(50)   */
+                , #{SCD}   		/* 조직코드        VARCHAR(20)   */
+                , #{PERNO}   	/* 주민등록번호    VARCHAR(4000) */
+                , #{BIRTH}      /* 생년월일   	   VARCHAR(10)   */
+                , #{JIKGUB}   	/* 직급코드        VARCHAR(20)   */
+                , #{JIKCHK}   	/* 직책코드        VARCHAR(20)   */
+                , #{TELNO}   	/* 집 전화번호     VARCHAR(15)   */
+                , #{HPNO}   	/* 핸드폰번호      VARCHAR(20)   */
+                , #{EXTNO}   	/* 내선번호        VARCHAR(20)   */
+                , #{CORP_EMAIL_ADDR}   	/* 이메일          VARCHAR(50)   */
+                , #{CORP_}   	/* 이메일          VARCHAR(50)   */
+                , #{ZIPCD}   	/* 우편번호        VARCHAR(7)    */
+                , #{ADDR1}   	/* 자택주소        VARCHAR(200)  */
+                , #{ADDR2}   	/* 자택주소상세    VARCHAR(200)  */
+                , #{EMPSTA}   	/* 재직여부        VARCHAR(20)   */
+                , #{INSCO_EMP_CD_GBN}   /* 자격구분        VARCHAR(1)   */
+                , #{JOIN_GBN}  	/* 입사구분        VARCHAR(20)   */
+                , #{PAY_GBN}   	/* 급여구분        VARCHAR(20)   */
+                , #{RCRT_TYPE}	/* 유치방식        VARCHAR(1)    */
+                , #{RE_EMP_CD} 	/* 유치자 사원코드 VARCHAR(20)   */
+                , TO_CHAR(#{LREG_YMD}, 'YYYY-MM-DD')   /* 생보등록일      VARCHAR(10)   */
+                , TO_CHAR(#{NREG_YMD}, 'YYYY-MM-DD')   /* 손보등록일      VARCHAR(10)   */
+                , TO_CHAR(#{VREG_YMD}, 'YYYY-MM-DD')   /* 변액등록일      VARCHAR(10)   */
+                , #{VREG_NO}    /* 변액등록번호   INT*/
+                , #{AREG_NO}    /* 협회등록번호  VARCHAR(30) */
+                , #{AREG_YN}			/* 협회등록여부  varchar(10) */
+                , #{CAREER_GBN}	/* 경력여부       VARCHAR(30) */
+                , TO_CHAR(#{ENT_YMD}, 'YYYY-MM-DD')   	/* 입사일자        VARCHAR(10)   */
+                , TO_CHAR(#{GENT_YMD}, 'YYYY-MM-DD')	/* 위촉일자        VARCHAR(10)   */
+                , TO_CHAR(#{REENTRY_YMD}, 'YYYY-MM-DD') /* 재입사일자      VARCHAR(10)   */
+                , TO_CHAR(#{END_YMD}, 'YYYY-MM-DD') 	/* 퇴사일자        VARCHAR(10)   */
+                , TO_CHAR(#{OUT_YMD}, 'YYYY-MM-DD')   	/* 해촉일자        VARCHAR(10)   */
+                , (SELECT cd_vl_nm FROM tbcm_common_code WHERE mb_id = #{MB_ID} AND grp_cmm_cd = 'VM_BANK' AND cd_vl = #{BANK})   	/* 은행코드        VARCHAR(20)   */
+                , #{BK_ID}   	/* 계좌번호        VARCHAR(66)   */
+                , #{OWNER}   	/* 예금주          VARCHAR(50)   */
+                , #{OWNER_RELATION}   /* 예금주와의 관계 VARCHAR(20)   */
+                , #{MEMO}   	/* 메모            VARCHAR(1000) */
+                , #{FILE_NAME} 	/* 첨부파일명      VARCHAR(200)  */
+                , #{IN_EMP_CD} 	/* 입력자사번      VARCHAR(20)   */
+                , now()   		/* 입력일시        DATETIME      */
+                , null   		/* 수정자사번      VARCHAR(20)   */
+                , null   		/* 수정일시        DATETIME      */
+			 )
+	</insert>
+	<!-- 해촉일 수정 -->
+	<update id="updateInsaMap"  parameterType="hmap" useGeneratedKeys="true" keyProperty="seq">
+		/* insa-mapper.xml updateInsaMap 해촉일 수정 */
+		UPDATE tbin_empmst
+		SET end_ymd  = TO_CHAR(#{END_YMD}, 'YYYY-MM-DD') 
+		  , up_emp_cd = #{IN_EMP_CD}        /* 수정자사번      VARCHAR(20)   */
+		  , up_dtm  =now()                  /* 수정일시        DATETIME      */
+	    WHERE  mb_id = #{MB_ID}   	
+		   AND emp_cd = #{EMP_CD}
+	</update>
+	<!-- 인사 수정 -->
+	<update id="updateInsa" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml updateInsa 인사 수정 */
+		UPDATE tbin_empmst /* [IN][인사] 인사마스터 */
+		   SET emp_nm         = #{emp_nm}    /* 사원명          VARCHAR(20)   */
+		   	 , emp_nme        = #{emp_nme}   /* 사원영문명          VARCHAR(50)   */
+		     , scd            = #{scd}    /* 조직코드        VARCHAR(20)   */
+		     , perno          = #{perno}    /* 주민등록번호    VARCHAR(4000) */
+		     , birth          = #{birth}   /* 생년월일   	   VARCHAR(10)   */
+		     , jikgub         = #{jikgub}    /* 직급코드        VARCHAR(20)   */
+		     , jikchk         = #{jikchk}    /* 직책코드        VARCHAR(20)   */
+		     , telno          = #{telno}    /* 집 전화번호     VARCHAR(15)   */
+		     , hpno           = #{hpno}    /* 핸드폰번호      VARCHAR(20)   */
+		     , extno          = #{extno}    /* 내선번호        VARCHAR(20)   */
+		     , email          = #{email}    /* 이메일          VARCHAR(50)   */
+		     , corp_email_addr  = #{corp_email_addr}    /* 이메일          VARCHAR(50)   */
+		     , zipcd          = #{zipcd}    /* 우편번호        VARCHAR(7)    */
+		     , addr1          = #{addr1}    /* 자택주소        VARCHAR(200)  */
+		     , addr2          = #{addr2}    /* 자택주소상세    VARCHAR(200)  */
+		     , insco_emp_cd_gbn = #{insco_emp_cd_gbn}    /* 자격구분        VARCHAR(1)   */
+		     , empsta         = #{empsta}    /* 재직여부        VARCHAR(20)   */
+		     , join_gbn       = #{join_gbn}    /* 입사구분        VARCHAR(20)   */
+		     , pay_gbn        = #{pay_gbn}    /* 급여구분        VARCHAR(20)   */
+		     , rcrt_type      = #{rcrt_type}    /* 유치방식        VARCHAR(1)    */
+		     , re_emp_cd      = #{re_emp_cd}    /* 유치자 사원코드 VARCHAR(20)   */
+		     , lreg_ymd       = #{lreg_ymd}    /* 생보등록일      VARCHAR(10)   */
+		     , nreg_ymd       = #{nreg_ymd}    /* 손보등록일      VARCHAR(10)   */
+		     , lreg_out_ymd   = #{lreg_out_ymd}    /* 생보말소일      VARCHAR(10)   */
+		     , nreg_out_ymd   = #{nreg_out_ymd}    /* 손보말소일      VARCHAR(10)   */
+		     , lreg_insco_cd  = #{lreg_insco_cd}    /* 생보등록사 VARCHAR(20)   */
+		     , nreg_insco_cd  = #{nreg_insco_cd}    /* 손보등록사 VARCHAR(20)   */
+		     , vreg_ymd       = #{vreg_ymd}    /* 변액등록일      VARCHAR(10)   */
+		     , vreg_no		  = #{vreg_no}	   /* 변액등록번호	INT */
+		     , areg_no		  = #{areg_no}	   /* 협회등록번호	 VARCHAR(30) */
+		     , areg_yn		  = #{areg_yn}	   /* 협회등록여부	 VARCHAR(10) */
+		     , career_gbn     = #{career_gbn}  /* 경력여부       VARCHAR(30) */
+		     , ent_ymd        = #{ent_ymd }    /* 입사일자        VARCHAR(10)   */
+		     , gent_ymd       = #{gent_ymd}    /* 위촉일자        VARCHAR(10)   */
+		     , apgent_ymd     = #{apgent_ymd}  /* 적용위촉일자        VARCHAR(10)   */
+		     , reentry_ymd    = #{reentry_ymd} /* 재입사일자      VARCHAR(10)   */
+		     , end_ymd        = #{end_ymd }    /* 퇴사일자        VARCHAR(10)   */
+		     , out_ymd        = #{out_ymd }    /* 해촉일자        VARCHAR(10)   */
+		     , gain_ymd        = #{gain_ymd }    /* 취득일        VARCHAR(10)   */
+		     , lost_ymd        = #{lost_ymd }    /* 상실일        VARCHAR(10)   */
+		     , tax_elecno	  = CASE WHEN #{tax_elecno} ='' THEN NULL 
+		                             ELSE #{tax_elecno} END  /* 세무전산번호 int */
+		     , bank           = #{bank}    /* 은행코드        VARCHAR(20)   */
+		     , bk_id          = #{bk_id}    /* 계좌번호        VARCHAR(66)   */
+		     , owner          = #{owner}    /* 예금주          VARCHAR(50)   */
+		     , owner_relation = #{owner_relation}    /* 예금주와의 관계 VARCHAR(20)   */
+		     , movable_ratio_gbn = #{movable_ratio_gbn} /* 가동율 포함여부 구분 */
+		     , memo           = #{memo}    /* 메모            VARCHAR(1000) */
+		     , file_name      = #{file_name}    /* 첨부파일명      VARCHAR(200)  */
+		      <if test='@kr.co.gnx.comm.util.CommUtil@isEquals(mb_id, "ITX")'>
+		     , bun_gbn        = #{bun_gbn}    /* 선지급, 분급    VARCHAR(20)  */
+		     , earn_gbn        = #{earn_gbn}    /* 적립여부    VARCHAR(20)  */
+		      </if>
+		     , up_emp_cd      = #{up_emp_cd}    /* 수정자사번      VARCHAR(20)   */
+		     , up_dtm         = now()    /* 수정일시        DATETIME      */
+	    	 <if test='@kr.co.gnx.comm.util.CommUtil@isEquals(mb_id, "AFG")'>
+			 , settlement_gbn = #{settlement_gbn}
+			 , out_reason = #{out_reason}
+			 </if>
+	    	 <if test='@kr.co.gnx.comm.util.CommUtil@isEquals(mb_id, "NIKE")'>
+			 , start_sale_dtm = #{start_sale_dtm}
+			 </if>
+		 WHERE mb_id = #{mb_id}
+		   AND emp_cd = #{emp_cd}
+	</update>
+	
+	<!-- 인사 수정(밸류베스트용 - 밸류베스트 자체관리빼고 나머지 가져오는 정보 업데이트) -->
+	<update id="updateVmarkBestInsa" parameterType="hmap">
+		/* insa-mapper.xml updateVmarkBestInsa 인사 수정(밸류베스트용 - 밸류베스트 자체관리빼고 나머지 가져오는 정보 업데이트) */
+		UPDATE tbin_empmst /* [IN][인사] 인사마스터 */
+		   SET emp_nm 		= #{EMP_NM}
+			 , email 		= #{EMAIL}
+			 , empsta 		= CASE WHEN #{EMPSTA} = '위촉' THEN '재직' ELSE #{EMPSTA} END
+			 , lreg_ymd 	= TO_CHAR(#{LREG_YMD}, 'YYYY-MM-DD')
+			 , nreg_ymd 	= TO_CHAR(#{NREG_YMD}, 'YYYY-MM-DD')
+			 , vreg_ymd 	= TO_CHAR(#{VREG_YMD}, 'YYYY-MM-DD')
+			 , ent_ymd 		= TO_CHAR(#{ENT_YMD}, 'YYYY-MM-DD')
+			 , gent_ymd 	= TO_CHAR(#{GENT_YMD}, 'YYYY-MM-DD')
+             , bank 		= (SELECT cd_vl_nm FROM tbcm_common_code WHERE mb_id = #{MB_ID} AND grp_cmm_cd = 'VM_BANK' AND cd_vl = #{BANK})   	/* 은행코드        VARCHAR(20)   */
+             , bk_id 		= #{BK_ID}   	/* 계좌번호        VARCHAR(66)   	*/
+             , owner 		= #{OWNER}   	/* 예금주          VARCHAR(50)   	*/
+		     , up_emp_cd    = #{IN_EMP_CD} 	/* 수정자사번      VARCHAR(20)  	*/
+		     , up_dtm       = now()    		/* 수정일시        DATETIME      	*/
+		 WHERE mb_id = #{MB_ID}
+		   AND emp_cd = #{EMP_CD}
+	</update>
+	
+	<!-- 프로필 파일경로 등록 -->
+	<update id="updateFilename" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml updateFilename 프로필 파일경로 등록 */
+		UPDATE tbin_empmst /* [IN][인사] 인사마스터 */
+		   SET file_name = #{file_name}    /* 첨부파일명                                   VARCHAR2(200)  */
+		     , up_emp_cd = #{up_emp_cd}    /* 수정자 사번                                  VARCHAR2(20)   */
+		     , up_dtm = now()              /* 수정일시                                     DATE(7)        */
+		 WHERE mb_id = #{mb_id}
+		   AND seq = #{seq}
+	</update>
+	
+	<!-- 인사 삭제 -->
+	<delete id="deleteInsa" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml deleteInsa 인사 삭제 */
+		DELETE
+		  FROM tbin_empmst /* [IN][인사] 인사마스터 */
+		 WHERE mb_id = #{mb_id}
+		   AND emp_cd = #{emp_cd}
+	</delete>
+	
+	<!-- 인사 삭제 -->
+	<delete id="deleteInsaWithoutScd" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml deleteInsa 인사 삭제 */
+		DELETE
+		  FROM tbin_empmst /* [IN][인사] 인사마스터 */
+		 WHERE mb_id = #{mb_id}
+		   AND emp_cd NOT IN (<include refid="Comm.RoleExcepcion"/>)
+		   AND scd NOT IN (#{SRCH_SCD})
+	</delete>
+		
+	<!-- 인사마감 리스트 조회 -->	
+	<select id="selectMonthInsaList" resultType="hmap" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml selectMonthInsaList 인사 마감 사원 리스트 가져오기 */
+						<include refid="Comm.OrgMonthTree"/>
+		                SELECT tb7.seq               /* 일련번호    RE_EMP_CD    BIGINT        */
+		                	 , tb7.com_ym			 /* 해당년월        VARCHAR(6)    */
+		                     , tb7.mb_id             /* 회사코드        VARCHAR(20)   */
+		                     , tb7.emp_cd            /* 사원코드        VARCHAR(20)   */
+		                     , tb7.emp_nm            /* 사원명          VARCHAR(20)   */
+		                     , tb7.emp_nme           /* 사원영문명      VARCHAR(50)   */
+		                     , tb10.login_id
+		                     , tb7.scd               /* 조직코드        VARCHAR(20)   */
+		                     , tb8.snm
+		                     , tb7.perno             /* 주민등록번호    VARCHAR(4000) */
+		                     , tb7.birth             /* 생년월일   	   VARCHAR(10)   */
+		                     , tb7.jikgub            /* 직급코드        VARCHAR(20)   */
+		                     , tb18.cd_vl_nm AS jikgub_nm
+		                     , tb7.jikchk            /* 직책코드        VARCHAR(20)   */
+		                     , tb19.cd_vl_nm AS jikchk_nm
+		                     , tb7.role_id           /* 권한        VARCHAR(50)   */
+		                     , tb12.role_nm
+		                     , tb7.telno             /* 집 전화번호     VARCHAR(15)   */
+		                     , tb7.hpno              /* 핸드폰번호      VARCHAR(20)   */
+		                     , tb7.extno             /* 내선번호        VARCHAR(20)   */
+		                     , tb7.email             /* 이메일          VARCHAR(50)   */
+		                     , tb7.corp_email_addr             /* 이메일          VARCHAR(50)   */
+		                     , tb7.zipcd             /* 우편번호        VARCHAR(7)    */
+		                     , tb7.addr1             /* 자택주소        VARCHAR(200)  */
+		                     , tb7.addr2             /* 자택주소상세    VARCHAR(200)  */
+		                     , tb7.empsta            /* 재직여부        VARCHAR(20)   */
+		                     , tb21.cd_vl_nm AS empsta_nm
+		                     , tb7.insco_emp_cd_gbn  /* 자격구분        VARCHAR(1)   */
+                             , tb17.cd_vl_nm AS insco_emp_cd_gbn_nm
+		                     , tb7.join_gbn          /* 입사구분        VARCHAR(20)   */
+		                     , tb7.pay_gbn           /* 급여구분        VARCHAR(20)   */
+		                     , tb7.rcrt_type         /* 유치방식        VARCHAR(1)    */
+		                     , tb15.cd_vl_nm AS rcrt_typenm
+		                     , tb7.re_emp_cd         /* 유치자 사원코드 VARCHAR(20)   */
+		                     , tb13.emp_nm as re_emp_nm
+		                     , tb14.snm AS re_emp_snm
+		                     , tb7.lreg_ymd          /* 생보등록일      VARCHAR(10)   */
+		                     , tb7.nreg_ymd          /* 손보등록일      VARCHAR(10)   */
+		                     , tb7.vreg_ymd          /* 변액등록일      VARCHAR(10)   */
+		                     , tb7.vreg_no
+		                     , tb7.areg_no
+		                     , tb7.areg_yn
+                             , tb22.cd_vl_nm AS areg_yn_nm
+                             , tb7.settlement_gbn
+                             , tb23.cd_vl_nm AS settlement_gbn_nm
+		                     , tb7.career_gbn
+		                     , tb20.cd_vl_nm AS career_gbn_nm
+		                     , tb7.out_reason
+		                     , tb29.cd_vl_nm AS out_reason_nm
+		                     , tb7.ent_ymd           /* 입사일자        VARCHAR(10)   */
+		                     , tb7.gent_ymd          /* 위촉일자        VARCHAR(10)   */
+		                     , tb7.apgent_ymd		 /* 적용위촉일자  VARCHAR(10)   */
+		                     , tb7.reentry_ymd   	 /* 재입사일자      VARCHAR(10)   */
+		                     , tb7.end_ymd           /* 퇴사일자        VARCHAR(10)   */
+		                     , tb7.out_ymd           /* 해촉일자        VARCHAR(10)   */
+		                     , tb7.bank              /* 은행코드        VARCHAR(20)   */
+		                     , tb7.bk_id             /* 계좌번호        VARCHAR(66)   */
+		                     , tb7.owner             /* 예금주          VARCHAR(50)   */
+		                     , tb7.owner_relation    /* 예금주와의 관계 VARCHAR(20)   */
+		                     , tb16.cd_vl_nm AS owner_relationnm
+		                     , tb7.movable_ratio_gbn /* 가동율 포함여부 구분 */
+		                     , tb7.memo              /* 메모            VARCHAR(1000) */
+		                     , tb7.file_name         /* 첨부파일명      VARCHAR(200)  */
+		                     , tb7.in_emp_cd         /* 입력자사번      VARCHAR(20)   */
+		                     , tb7.in_dtm            /* 입력일시        DATETIME      */
+		                     , tb7.up_emp_cd         /* 수정자사번      VARCHAR(20)   */
+		                     , tb7.up_dtm            /* 수정일시        DATETIME      */
+		                     , tb7.bun_gbn           /* 분급 선지급 구분                */
+		                     , tb30.cd_vl_nm AS bun_gbn_nm
+		                     , tb7.earn_gbn           /* 분급 선지급 구분                */
+		                     , tb31.cd_vl_nm AS earn_gbn_nm
+			                 , CASE WHEN tb8.pscd IS NULL THEN tb8.snm
+			                        ELSE SUBSTRING(SUBSTRING(tb8.snmpath,4),tb9.rootlength+4)
+			                    END AS snmpath
+			                 , SUBSTRING(tb8.scdpath,4) AS scdpath
+			                 <if test='@kr.co.gnx.comm.util.CommUtil@isEmpty(queryStr)'>
+			                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,4), ' > ', 1) AS snmpath1
+			                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 2) AS snmpath2
+			                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 3) AS snmpath3
+			                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 4) AS snmpath4
+			                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 5) AS snmpath5
+			                 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 6) AS snmpath6  
+			                 </if>
+			                 <if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(queryStr)'>
+			                 ${queryStr}
+			                 </if>
+			                
+		              FROM (SELECT *
+		                      FROM tbin_emp_month
+		                     WHERE mb_id = #{mb_id} AND com_ym=#{SRCH_COM_YM }) tb7
+		   LEFT OUTER JOIN org_month_cte tb8
+		                ON tb7.scd = tb8.scd
+		        INNER JOIN (SELECT CHAR_LENGTH(snm) as rootlength FROM tbin_scd_month WHERE mb_id = #{mb_id} AND pscd IS NULL AND com_ym=#{SRCH_COM_YM }) tb9
+		                ON 1 = 1
+		   LEFT OUTER JOIN (SELECT *
+		                      FROM tbsy_login
+		                     WHERE mb_id = #{mb_id}) tb10
+		                ON tb7.emp_cd = tb10.emp_cd
+		   LEFT OUTER JOIN (SELECT * FROM tbsy_roles_map WHERE mb_id = #{mb_id}) tb12
+		                ON tb7.role_id = tb12.role_id
+		   LEFT OUTER JOIN (SELECT * FROM tbin_emp_month WHERE mb_id =#{mb_id} AND com_ym=#{SRCH_COM_YM }) tb13
+		                ON tb7.re_emp_cd = tb13.emp_cd
+		   LEFT OUTER JOIN (SELECT * FROM tbin_scd_month WHERE mb_id = #{mb_id} AND com_ym=#{SRCH_COM_YM }) tb14
+		                ON tb13.scd = tb14.scd
+		   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE MB_ID = #{mb_id} AND grp_cmm_cd = 'RCRT_TYPE') tb15
+		                ON tb7.rcrt_type = tb15.cd_vl
+		   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE MB_ID = #{mb_id} AND grp_cmm_cd = 'OWNER_RELATION') tb16
+		                ON tb7.owner_relation = tb16.cd_vl
+           LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'INSCO_EMP_CD_GBN') tb17
+                        ON tb7.insco_emp_cd_gbn = tb17.cd_vl
+		   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'JIKGUB') tb18
+                        ON tb7.jikgub = tb18.cd_vl
+		   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'JIKCHK') tb19
+                        ON tb7.jikchk = tb19.cd_vl
+		   LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'CAREER_GBN') tb20
+                        ON tb7.career_gbn = tb20.cd_vl
+           LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd ='EMPSTA') tb21
+           				ON tb7.empsta = tb21.cd_vl
+           LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'AREG_YN') tb22
+                        ON tb7.areg_yn = tb22.cd_vl  
+           LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = 'AFG' AND grp_cmm_cd = 'SETTLEMENT_GBN') tb23
+                       ON tb7.settlement_gbn = tb23.cd_vl   
+           LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = 'AFG' AND grp_cmm_cd = 'OUT_REASON') tb29
+                       ON tb7.out_reason = tb29.cd_vl   
+           LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id =#{mb_id} AND grp_cmm_cd = 'BUN_GBN') tb30
+                       ON tb7.bun_gbn = tb30.cd_vl   
+           LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id =#{mb_id} AND grp_cmm_cd = 'EARN_GBN') tb31
+                       ON tb7.earn_gbn = tb31.cd_vl                           
+					 WHERE 1 = 1
+					  AND tb7.emp_cd NOT IN (<include refid="Comm.RoleExcepcion"/>)
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEquals(view_auth, "ADMIN") and @kr.co.gnx.comm.util.CommUtil@isNotEmpty(view_auth)'>
+		              AND tb7.emp_cd IN (<include refid="Comm.menuEmpCdRole"/>)
+		            </if>
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(emp_cd)'>
+					   AND tb7.emp_cd = #{emp_cd}
+					</if>
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_SCD)'>
+						AND (tb8.scd = #{SRCH_SCD} OR tb8.scdpath LIKE CONCAT('%> ',#{SRCH_SCD},' >%'))
+					</if>
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_JIKCHK)'>
+						AND tb7.jikchk = #{SRCH_JIKCHK}
+					</if>
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_JIKGUB)'>
+						AND tb7.jikgub = #{SRCH_JIKGUB}
+					</if>
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_ROLE_ID)'>
+						AND tb7.role_id = #{SRCH_ROLE_ID}
+					</if>
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_EMPSTA)'>
+						AND tb7.empsta = #{SRCH_EMPSTA}
+					</if>
+
+
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_START_VALUE)'>
+						<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(SRCH_TERM, "01")'>    <!-- 입사일 -->
+							<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_END_VALUE)'>
+							AND tb7.ent_ymd BETWEEN #{SRCH_TERM_START_VALUE} AND #{SRCH_TERM_END_VALUE}
+							</if>  
+							<if test='@kr.co.gnx.comm.util.CommUtil@isEmpty(SRCH_TERM_END_VALUE)'>
+							<![CDATA[ AND tb7.ent_ymd >= #{SRCH_TERM_START_VALUE} ]]>
+							</if>		
+						</if>
+						<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(SRCH_TERM, "02")'>    <!-- 위촉일 -->
+							<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_END_VALUE)'>
+							AND tb7.gent_ymd BETWEEN #{SRCH_TERM_START_VALUE} AND #{SRCH_TERM_END_VALUE}
+							</if>  
+							<if test='@kr.co.gnx.comm.util.CommUtil@isEmpty(SRCH_TERM_END_VALUE)'>
+							<![CDATA[ AND tb7.gent_ymd >= #{SRCH_TERM_START_VALUE} ]]>
+							</if>	
+						</if>
+						<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(SRCH_TERM, "03")'>    <!-- 해촉일 -->
+							<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_END_VALUE)'>
+							AND tb7.end_ymd BETWEEN #{SRCH_TERM_START_VALUE} AND #{SRCH_TERM_END_VALUE}
+							</if>  
+							<if test='@kr.co.gnx.comm.util.CommUtil@isEmpty(SRCH_TERM_END_VALUE)'>
+							<![CDATA[ AND tb7.end_ymd >= #{SRCH_TERM_START_VALUE} ]]>
+							</if>	
+						</if>
+					</if>
+					<if test='@kr.co.gnx.comm.util.CommUtil@isEmpty(SRCH_TERM_START_VALUE)'>
+						<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(SRCH_TERM, "01")'>    <!-- 입사일 -->
+							<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_END_VALUE)'>
+							<![CDATA[ AND tb7.ent_ymd <= #{SRCH_TERM_END_VALUE} ]]>
+							</if>  	
+						</if>
+						<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(SRCH_TERM, "02")'>    <!-- 위촉일 -->
+							<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_END_VALUE)'>
+							<![CDATA[ AND tb7.gent_ymd <=  #{SRCH_TERM_END_VALUE} ]]>
+							</if>  
+						</if>
+						<if test='@kr.co.gnx.comm.util.CommUtil@isEquals(SRCH_TERM, "03")'>    <!-- 해촉일 -->
+							<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_TERM_END_VALUE)'>
+							<![CDATA[ AND tb7.end_ymd <=  #{SRCH_TERM_END_VALUE} ]]>
+							</if>  
+						</if>
+					</if>
+					
+					<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_EMP_VALUE)'>
+						AND (  tb7.emp_nm LIKE CONCAT('%',#{SRCH_EMP_VALUE},'%')
+							OR tb7.emp_cd LIKE CONCAT('%',UPPER(#{SRCH_EMP_VALUE}),'%')
+							OR tb7.perno = #{SRCH_EMP_VALUE} /* 개인정보보호를 위해 정확히 기입했을때만 조회 */
+							OR tb7.hpno LIKE CONCAT('%',#{SRCH_EMP_VALUE},'%')
+						)
+					</if>
+				  ORDER BY tb7.emp_nm
+	</select>
+	
+	<select id="selectMonthEmpView" resultType="hmap" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml selectMonthEmpView 사원정보 조회 */
+		<include refid="Comm.OrgMonthTree"/>
+				SELECT tb7.seq               /* 일련번호    RE_EMP_CD    BIGINT        */
+                     , tb7.mb_id             /* 회사코드        VARCHAR(20)   */
+                     , tb7.com_ym            /* 입력년월        VARCHAR(6)    */
+                     , tb7.emp_cd            /* 사원코드        VARCHAR(20)   */
+                     , tb7.emp_nm            /* 사원명          VARCHAR(20)   */
+                     , tb7.emp_nme           /* 사원영문명     VARCHAR(50)   */
+                     , tb10.login_id
+                     , tb7.scd               /* 조직코드        VARCHAR(20)   */
+                     , tb8.snm
+                     , tb7.perno             /* 주민등록번호    VARCHAR(4000) */
+                     , tb7.birth             /* 생년월일   	   VARCHAR(10)   */
+                     , tb7.jikgub            /* 직급코드        VARCHAR(20)   */
+                     , tb7.jikchk            /* 직책코드        VARCHAR(20)   */
+                     , tb7.role_id
+                     , tb12.role_nm
+                     , tb7.telno             /* 집 전화번호     VARCHAR(15)   */
+                     , tb7.hpno              /* 핸드폰번호      VARCHAR(20)   */
+                     , tb7.extno             /* 내선번호        VARCHAR(20)   */
+                     , tb7.email             /* 이메일          VARCHAR(50)   */
+                     , tb7.corp_email_addr             /* 이메일          VARCHAR(50)   */
+                     , tb7.zipcd             /* 우편번호        VARCHAR(7)    */
+                     , tb7.addr1             /* 자택주소        VARCHAR(200)  */
+                     , tb7.addr2             /* 자택주소상세    VARCHAR(200)  */
+                     , tb7.empsta            /* 재직여부        VARCHAR(20)   */
+                     , tb7.insco_emp_cd_gbn  /* 자격구분        VARCHAR(1)   */
+                     , tb17.cd_vl_nm AS insco_emp_cd_gbn_nm
+                     , tb7.join_gbn          /* 입사구분        VARCHAR(20)   */
+                     , tb7.pay_gbn           /* 급여구분        VARCHAR(20)   */
+                     , tb7.rcrt_type         /* 유치방식        VARCHAR(1)    */
+                     , tb7.re_emp_cd         /* 유치자 사원코드 VARCHAR(20)   */
+                     , tb13.emp_nm AS re_emp_nm
+                     , tb14.snm AS re_emp_snm
+                     , tb13.jikgub AS re_jikgub
+                     , tb7.lreg_ymd          /* 생보등록일      VARCHAR(10)   */
+                     , tb7.nreg_ymd          /* 손보등록일      VARCHAR(10)   */
+                     , tb7.vreg_ymd          /* 변액등록일      VARCHAR(10)   */
+                     , tb7.vreg_no
+                     , tb7.areg_no
+                     , tb7.areg_yn
+                     , tb7.career_gbn
+                     , tb18.cd_vl_nm AS career_gbn_nm
+                     , tb7.ent_ymd           /* 입사일자        VARCHAR(10)   */
+                     , tb7.gent_ymd          /* 위촉일자        VARCHAR(10)   */
+                     , tb7.apgent_ymd		 /* 적용위촉일자 VARCHAR(10)    */
+                     , tb7.reentry_ymd   	 /* 재입사일자      VARCHAR(10)   */
+                     , tb7.end_ymd           /* 퇴사일자        VARCHAR(10)   */
+                     , tb7.out_ymd           /* 해촉일자        VARCHAR(10)   */
+                     , tb7.bank              /* 은행코드        VARCHAR(20)   */
+                     , tb7.bk_id             /* 계좌번호        VARCHAR(66)   */
+                     , tb7.owner             /* 예금주          VARCHAR(50)   */
+                     , tb7.owner_relation    /* 예금주와의 관계 VARCHAR(20)   */
+                     , tb7.memo              /* 메모            VARCHAR(1000) */
+                     , tb7.file_name         /* 첨부파일명      VARCHAR(200)  */
+                     , tb7.in_emp_cd         /* 입력자사번      VARCHAR(20)   */
+                     , DATE_FORMAT(tb7.in_dtm, '%Y-%m-%d') AS in_dtm            /* 입력일시        DATETIME      */
+                     , tb7.up_emp_cd         /* 수정자사번      VARCHAR(20)   */
+                     , DATE_FORMAT(tb7.up_dtm, '%Y-%m-%d') AS up_dtm            /* 수정일시        DATETIME      */
+                 	 , CASE WHEN tb8.pscd IS NULL THEN tb8.snm
+                        	ELSE SUBSTRING(SUBSTRING(tb8.snmpath,4),tb9.rootlength+4)
+                    	END AS snmpath
+                 	 , SUBSTRING(tb8.scdpath,4) AS scdpath
+                 	 , fn_get_pathroot(SUBSTRING(tb8.snmpath,4), ' > ', 1) AS snmpath1
+                 	 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 2) AS snmpath2
+                 	 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 3) AS snmpath3
+                 	 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 4) AS snmpath4
+                  	 , fn_get_pathroot(SUBSTRING(tb8.snmpath,2), ' > ', 5) AS snmpath5
+                  	 , tb7.gain_ymd
+                  	 , tb7.lost_ymd
+                  	 , tb7.out_reason
+                     , tb19.cd_vl_nm as out_reason_nm        /* 해촉사유        VARCHART(10)      */
+                     , tb7.bun_gbn
+                     , tb7.earn_gbn
+                     , tb20.cd_vl_nm as earn_gbn_nm      
+              	  FROM (SELECT *
+	                      FROM tbin_emp_month
+	                     WHERE mb_id = #{mb_id} AND com_ym = #{com_ym }) tb7
+   	   LEFT OUTER JOIN org_month_cte tb8
+                	ON tb7.scd = tb8.scd
+        	INNER JOIN (SELECT CHAR_LENGTH(snm) as rootlength FROM tbin_scd_month WHERE mb_id = #{mb_id} AND pscd IS NULL AND com_ym = #{com_ym }) tb9
+                	ON 1 = 1
+   	   LEFT OUTER JOIN (SELECT *
+                      	  FROM tbsy_login
+                     	 WHERE mb_id = #{mb_id}) tb10
+                	ON tb7.emp_cd = tb10.emp_cd
+   	   LEFT OUTER JOIN (SELECT * FROM tbsy_roles_map WHERE mb_id = #{mb_id}) tb12
+                	ON tb7.role_id = tb12.role_id
+   	   LEFT OUTER JOIN (SELECT * FROM tbin_emp_month
+                 WHERE mb_id =#{mb_id}  AND com_ym = #{com_ym }) tb13
+                	ON tb7.re_emp_cd = tb13.emp_cd
+   	   LEFT OUTER JOIN (SELECT *
+                      	  FROM tbin_scd_month
+                     	 WHERE mb_id = #{mb_id} AND com_ym = #{com_ym }) tb14
+                	ON tb13.scd = tb14.scd
+       LEFT OUTER JOIN (SELECT *
+                          FROM tbcm_common_code
+                         WHERE mb_id = #{mb_id}
+                           AND grp_cmm_cd = 'INSCO_EMP_CD_GBN') tb17
+                    ON tb7.insco_emp_cd_gbn = tb17.cd_vl
+       LEFT OUTER JOIN (SELECT *
+                          FROM tbcm_common_code
+                         WHERE mb_id = #{mb_id}
+                           AND grp_cmm_cd = 'CAREER_GBN') tb18
+                    ON tb7.career_gbn = tb18.cd_vl
+       LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'OUT_REASON') tb19
+   				   ON tb7.out_reason = tb19.cd_vl
+   	  LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'EARN_GBN') tb20
+   				   ON tb7.earn_gbn = tb20.cd_vl		   
+                 WHERE tb7.mb_id = #{mb_id}
+                   AND tb7.emp_cd = #{emp_cd}
+	</select>
+	
+	<!-- 인사마감 수정 -->
+	<update id="updateMonthInsa" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml updateMonthInsa 인사마감 수정 */
+		UPDATE tbin_emp_month /* [IN][인사] 인사마스터 */
+		   SET emp_nm         = #{emp_nm}    /* 사원명          VARCHAR(20)   */
+		   	 , emp_nme        = #{emp_nme}   /* 사원영문명          VARCHAR(50)   */
+		     , perno          = #{perno}    /* 주민등록번호    VARCHAR(4000) */
+		     , birth          = #{birth}    /* 생년월일   	   VARCHAR(10)   */
+		     , role_id        = #{role_id}  /* 권한    VARCHAR(50) */
+		     , telno          = #{telno}    /* 집 전화번호     VARCHAR(15)   */
+		     , hpno           = #{hpno}    /* 핸드폰번호      VARCHAR(20)   */
+		     , extno          = #{extno}    /* 내선번호        VARCHAR(20)   */
+		     , email          = #{email}    /* 이메일          VARCHAR(50)   */
+		     , corp_email_addr  = #{corp_email_addr}    /* 이메일          VARCHAR(50)   */
+		     , zipcd          = #{zipcd}    /* 우편번호        VARCHAR(7)    */
+		     , addr1          = #{addr1}    /* 자택주소        VARCHAR(200)  */
+		     , addr2          = #{addr2}    /* 자택주소상세    VARCHAR(200)  */
+		     , empsta         = #{empsta}    /* 재직여부        VARCHAR(20)   */
+		     , insco_emp_cd_gbn = #{insco_emp_cd_gbn}    /* 자격구분        VARCHAR(1)   */
+		     , jikgub 		  = #{jikgub}
+		     , jikchk		  = #{jikchk}
+		     , scd			  = #{scd}
+		     , join_gbn       = #{join_gbn}    /* 입사구분        VARCHAR(20)   */
+		     , pay_gbn        = #{pay_gbn}    /* 급여구분        VARCHAR(20)   */
+		     , rcrt_type      = #{rcrt_type}    /* 유치방식        VARCHAR(1)    */
+		     , re_emp_cd      = #{re_emp_cd}    /* 유치자 사원코드 VARCHAR(20)   */
+		     , lreg_ymd       = #{lreg_ymd}    /* 생보등록일      VARCHAR(10)   */
+		     , nreg_ymd       = #{nreg_ymd}    /* 손보등록일      VARCHAR(10)   */
+		     , vreg_ymd       = #{vreg_ymd}    /* 변액등록일      VARCHAR(10)   */
+		     , vreg_no        = #{vreg_no}
+		     , areg_no        = #{areg_no}
+		     , areg_yn        = #{areg_yn}
+		     , career_gbn     = #{career_gbn}
+		     , ent_ymd        = #{ent_ymd }    /* 입사일자        VARCHAR(10)   */
+		     , gent_ymd       = #{gent_ymd}    /* 위촉일자        VARCHAR(10)   */
+		     , apgent_ymd     = #{apgent_ymd}  /* 적용위촉일자 VARCHAR(10)   */
+		     , reentry_ymd    = #{reentry_ymd} /* 재입사일자      VARCHAR(10)   */
+		     , end_ymd        = #{end_ymd }    /* 퇴사일자        VARCHAR(10)   */
+		     , out_ymd        = #{out_ymd }    /* 해촉일자        VARCHAR(10)   */
+		     , bank           = #{bank}    /* 은행코드        VARCHAR(20)   */
+		     , bk_id          = #{bk_id}    /* 계좌번호        VARCHAR(66)   */
+		     , owner          = #{owner}    /* 예금주          VARCHAR(50)   */
+		     , owner_relation = #{owner_relation}    /* 예금주와의 관계 VARCHAR(20)   */
+		     , memo           = #{memo}    /* 메모            VARCHAR(1000) */
+		     , file_name      = #{file_name}    /* 첨부파일명      VARCHAR(200)  */
+		     , mdf_emp_cd     = #{up_emp_cd}    /* 마감수정자사번      VARCHAR(20)   */
+		     , mdf_dtm        = now()          /* 마감수정일시        DATETIME      */
+	    	 <if test='@kr.co.gnx.comm.util.CommUtil@isEquals(mb_id, "AFG")'>
+			 , gain_ymd       = #{gain_ymd}
+			 , lost_ymd       = #{lost_ymd}
+			 , out_reason     = #{out_reason}
+			 </if>
+			  <if test='@kr.co.gnx.comm.util.CommUtil@isEquals(mb_id, "ITX")'>
+			   , bun_gbn        = #{bun_gbn}    /* 선지급 분급        VARCHAR      */
+			   , earn_gbn        = #{earn_gbn}    /* 적립여부       VARCHAR      */
+			 </if>
+		 WHERE mb_id = #{mb_id}
+		   AND emp_cd = #{emp_cd}
+		   AND com_ym = #{com_ym}
+	</update>
+	
+	<!-- 인사마감 삭제 -->
+	<delete id="deleteMonthInsa" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml deleteMonthInsa 인사 삭제 */
+		DELETE
+		  FROM tbin_emp_month /* [IN][인사] 인사마감 */
+		 WHERE mb_id = #{mb_id}
+		   AND emp_cd = #{emp_cd}
+		   AND com_ym = #{com_ym}
+	</delete>
+	
+	<!-- 평가인사마감 리스트 조회 -->	
+	<sql id="selectMonthEvalInsaSql">
+		/* insa-mapper.xml selectMonthEvalInsaList 평가인사마감 리스트 가져오기 */
+		WITH recursive org_month_cte	/* org_unit_gbn 단위로 org_unit_level_path 생성 */
+        AS (SELECT 1 AS level
+                 , tb1.mb_id
+                 , tb1.com_ym
+                 , tb1.scd
+                 , tb1.snm
+                 , tb1.pscd
+                 , tb1.org_unit_gbn
+                 , tb1.scd_head
+                 , tb1.div_yn
+                 , tb1.div_ymd
+                 , tb1.div_comm_start_ymd
+                 , tb1.div_comm_end_ymd
+  	             , CONCAT('>', CAST(tb1.scd AS CHAR(509))) AS scdpath
+  	             , CONCAT('>', CAST(tb1.snm AS CHAR(509))) AS snmpath
+                 , CONCAT('>', CAST(1 AS CHAR(509))) AS org_unit_level_path
+                 , IFNULL(CONCAT('>', CAST(tb1.scd_head AS CHAR(509))), '') AS scd_head_path
+              FROM tbin_scd_month tb1
+             WHERE mb_id = #{mb_id}
+               AND com_ym = #{SRCH_COM_YM }
+               AND pscd IS NULL
+         UNION ALL
+            SELECT level+1 AS level
+                 , tb1.mb_id
+                 , tb1.com_ym
+                 , tb1.scd
+                 , tb1.snm
+                 , tb1.pscd
+                 , tb1.org_unit_gbn
+                 , tb1.scd_head
+                 , tb1.div_yn
+                 , tb1.div_ymd
+                 , tb1.div_comm_start_ymd
+                 , tb1.div_comm_end_ymd
+                 , CONCAT(tb2.scdpath, '>', tb1.scd) AS scdpath
+                 , CONCAT(tb2.snmpath, '>', tb1.snm) AS snmpath
+                 , CONCAT(tb2.org_unit_level_path, '>', CASE tb1.org_unit_gbn
+	                                                        WHEN 1 THEN 1
+	                                                        WHEN 2 THEN 2
+	                                                        WHEN 3 THEN 3
+	                                                        WHEN 4 THEN 4
+	                                                        WHEN 5 THEN 5
+	                                                        WHEN 6 THEN 6
+	                                                        WHEN 7 THEN 7
+	                                                    END) AS org_unit_level_path
+                 , CONCAT(IFNULL(tb2.scd_head_path, ''), '>', IFNULL(tb1.scd_head, '')) AS scd_head_path
+              FROM tbin_scd_month tb1
+              JOIN org_month_cte tb2
+                ON tb1.mb_id = tb2.mb_id
+               AND tb1.com_ym = tb2.com_ym
+               AND tb1.pscd = tb2.scd
+             WHERE tb1.mb_id = #{mb_id}
+               AND tb1.com_ym = #{SRCH_COM_YM }
+            )
+          SELECT tb1.mb_id
+               , tb1.com_ym
+               , tb1.emp_cd
+               , tb2.emp_nm
+               , tb2.jikchk
+               , tb13.cd_vl_nm AS jikchknm
+               , tb2.empsta
+               , tb14.cd_vl_nm AS empstanm
+               , tb2.gent_ymd
+               , tb2.end_ymd
+               , tb2.out_ymd
+               , TIMESTAMPDIFF(MONTH, DATE_FORMAT(ORACLE_NVL(tb2.gent_ymd, tb2.ent_ymd), '%Y-%m-01'), DATE_FORMAT(CONCAT(#{SRCH_COM_YM }, '01'), '%Y-%m-%d')) + 1 AS gent_chawol	/* default(위촉차월) */
+               , tb3.org_unit_gbn
+               , tb15.cd_vl_nm AS org_unit_gbnnm
+               , tb1.scd
+               , tb3.snm
+               , tb3.snmpath
+               , tb1.scd_head
+               , scdnm.emp_nm AS scd_headnm
+               , tb3.div_yn
+               , tb3.div_ymd
+               , tb3.div_comm_start_ymd
+               , tb3.div_comm_end_ymd
+               , tb4.div_pscd   		    		/* 분할모조직 코드 */ 
+               , tb5.snm AS div_pscdnm  			/* 분할모조직 명 */ 
+               , tb4.div_pscd_head	    			/* 분할모조직장 코드 */
+               , tb6.emp_nm AS div_pscd_headnm		/* 분할모조직장 명 */
+               , tb1.lv1_scd
+               , tb1.lv1_scd_head
+               , tb1.lv2_scd
+               , tb1.lv2_scd_head
+               , tb7.emp_nm AS lv2_scd_headnm
+               
+               , tb1.lv3_scd
+               , tb1.lv3_scd_head
+               , tb8.emp_nm AS lv3_scd_headnm
+               
+               , tb1.lv4_scd
+               , tb1.lv4_scd_head
+               , tb9.emp_nm AS lv4_scd_headnm
+               
+               , tb1.lv5_scd
+               , tb1.lv5_scd_head
+               , tb10.emp_nm AS lv5_scd_headnm
+               
+               , tb1.lv6_scd
+               , tb1.lv6_scd_head
+               , tb11.emp_nm AS lv6_scd_headnm
+               
+               , tb1.lv7_scd
+               , tb1.lv7_scd_head
+               , tb12.emp_nm AS lv7_scd_headnm
+               
+               , tb1.in_emp_cd
+               , tb1.in_dtm
+               , tb1.input_method
+            FROM (SELECT * FROM tbpm_emp_kac_month WHERE mb_id = #{mb_id} AND com_ym = #{SRCH_COM_YM }) tb1
+ LEFT OUTER JOIN (SELECT * FROM tbin_emp_month WHERE mb_id = #{mb_id} AND com_ym = #{SRCH_COM_YM }) tb2     /* 인사 마감 데이터  */
+              ON tb1.mb_id = tb2.mb_id
+             AND tb1.com_ym = tb2.com_ym
+             AND tb1.scd = tb2.scd
+             AND tb1.emp_cd = tb2.emp_cd
+ LEFT OUTER JOIN org_month_cte tb3
+              ON tb1.mb_id = tb3.mb_id
+             AND tb1.com_ym = tb3.com_ym
+             AND tb1.scd = tb3.scd  
+  LEFT OUTER JOIN (SELECT * FROM tbin_scd_month WHERE mb_id = #{mb_id} AND com_ym = #{SRCH_COM_YM }) tb4     /* 조직마감 조직장 scd */
+              ON tb3.mb_id = tb4.mb_id
+             AND tb3.com_ym = tb4.com_ym
+             AND tb3.scd = tb4.scd
+             AND tb3.div_yn = tb4.div_yn
+ LEFT OUTER JOIN (SELECT * FROM tbin_emp_month WHERE mb_id = #{mb_id} AND com_ym = #{SRCH_COM_YM }) scdnm     /* 조직마감 SCD_HEADNM */
+              ON tb3.mb_id = scdnm.mb_id
+             AND tb3.com_ym = scdnm.com_ym
+             AND tb3.scd_head = scdnm.emp_cd             
+ LEFT OUTER JOIN (SELECT * FROM tbin_scd_month WHERE mb_id = #{mb_id} AND com_ym = #{SRCH_COM_YM }) tb5     /* 조직마감 조직장 div_pscd */
+              ON tb4.mb_id = tb5.mb_id
+             AND tb4.com_ym = tb5.com_ym
+             AND tb4.div_pscd = tb5.scd           
+ LEFT OUTER JOIN (SELECT * FROM tbin_emp_month WHERE mb_id = #{mb_id} AND com_ym = #{SRCH_COM_YM }) tb6     /* 조직마감 조직장 emp */
+              ON tb5.mb_id = tb6.mb_id
+             AND tb5.com_ym = tb6.com_ym
+             AND tb5.scd_head = tb6.emp_cd
+ LEFT OUTER JOIN (SELECT * FROM tbin_emp_month WHERE mb_id = #{mb_id} AND com_ym = #{SRCH_COM_YM }) tb7     /* lv2_scd_headnm */
+              ON tb1.mb_id = tb7.mb_id
+             AND tb1.com_ym = tb7.com_ym
+             AND tb1.lv2_scd_head = tb7.emp_cd     
+ LEFT OUTER JOIN (SELECT * FROM tbin_emp_month WHERE mb_id = #{mb_id} AND com_ym = #{SRCH_COM_YM }) tb8     /* lv3_scd_headnm */
+              ON tb1.mb_id = tb8.mb_id
+             AND tb1.com_ym = tb8.com_ym
+             AND tb1.lv3_scd_head = tb8.emp_cd  
+ LEFT OUTER JOIN (SELECT * FROM tbin_emp_month WHERE mb_id = #{mb_id} AND com_ym = #{SRCH_COM_YM }) tb9     /* lv4_scd_headnm */
+              ON tb1.mb_id = tb9.mb_id
+             AND tb1.com_ym = tb9.com_ym
+             AND tb1.lv4_scd_head = tb9.emp_cd  
+ LEFT OUTER JOIN (SELECT * FROM tbin_emp_month WHERE mb_id = #{mb_id} AND com_ym = #{SRCH_COM_YM }) tb10     /* lv5_scd_headnm */
+              ON tb1.mb_id = tb10.mb_id
+             AND tb1.com_ym = tb10.com_ym
+             AND tb1.lv5_scd_head = tb10.emp_cd  
+ LEFT OUTER JOIN (SELECT * FROM tbin_emp_month WHERE mb_id = #{mb_id} AND com_ym = #{SRCH_COM_YM }) tb11     /* lv6_scd_headnm */
+              ON tb1.mb_id = tb11.mb_id
+             AND tb1.com_ym = tb11.com_ym
+             AND tb1.lv6_scd_head = tb11.emp_cd  
+ LEFT OUTER JOIN (SELECT * FROM tbin_emp_month WHERE mb_id = #{mb_id} AND com_ym = #{SRCH_COM_YM }) tb12     /* lv7_scd_headnm */
+              ON tb1.mb_id = tb12.mb_id
+             AND tb1.com_ym = tb12.com_ym
+             AND tb1.lv7_scd_head = tb12.emp_cd               
+ LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'JIKCHK') tb13
+              ON tb2.jikchk = tb13.cd_vl   
+ LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'EMPSTA') tb14
+              ON tb2.empsta = tb14.cd_vl     
+ LEFT OUTER JOIN (SELECT * FROM tbcm_common_code WHERE mb_id = #{mb_id} AND grp_cmm_cd = 'ORG_UNIT_GBN') tb15
+              ON tb3.org_unit_gbn = tb15.cd_vl                       
+           WHERE tb1.mb_id = #{mb_id}
+             AND tb1.com_ym = #{SRCH_COM_YM }
+             AND tb1.emp_cd NOT IN (<include refid="Comm.RoleExcepcion"/>)
+        <if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_EMPSTA)'>
+			 AND tb2.empsta = #{SRCH_EMPSTA}
+		</if>
+		<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_SCD)'>
+			 AND (tb3.scd = #{SRCH_SCD} OR tb3.scdpath LIKE CONCAT('%> ',#{SRCH_SCD},' >%'))
+		</if>
+		<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_EMP_VALUE)'>
+			 AND (  tb2.emp_nm LIKE CONCAT('%',#{SRCH_EMP_VALUE},'%')
+				 OR tb2.emp_cd LIKE CONCAT('%',UPPER(#{SRCH_EMP_VALUE}),'%')
+			 )
+		</if>
+	</sql>	
+	
+	<select id="selectMonthEvalInsaListCount" resultType="Integer" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml selectMonthEvalInsaListCount  리스트 갯수 */
+		<include refid="Comm.CountStart"/>
+		<include refid="selectMonthEvalInsaSql"/>
+		<include refid="Comm.CountEnd"/>
+	</select>
+	
+	<select id="selectMonthEvalInsaListPaging" resultType="hmap" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml selectMonthEvalInsaListPaging 평가인사 마감 리스트 페이징  */
+		<include refid="Comm.PagingLimitStart"/>
+		<include refid="selectMonthEvalInsaSql"/>
+		<include refid="Comm.PagingLimitEnd"/>
+	</select>
+	
+	<select id="selectMonthEvalInsaList" resultType="hmap" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml selectMonthEvalInsaList 평가인사 마감 리스트  */
+		<include refid="selectMonthEvalInsaSql"/>
+	</select>
+	
+	<!-- 평가인사 마감 수정 -->
+	<update id="updateMonthEvalInsaList" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml updateMonthEvalInsaList 평가인사마감 수정 */
+		UPDATE tbpm_emp_kac_month /* [IN][인사] 인사마스터 */
+		   SET lv2_scd		= #{lv2_scd}	
+			 , lv2_scd_head	= #{lv2_scd_head}
+			 , lv3_scd		= #{lv3_scd}	
+			 , lv3_scd_head	= #{lv3_scd_head}
+			 , lv5_scd		= #{lv5_scd}	
+			 , lv5_scd_head	= #{lv5_scd_head}
+			 , lv6_scd		= #{lv6_scd}	
+			 , lv6_scd_head	= #{lv6_scd_head}
+		     , up_emp_cd    = #{up_emp_cd}    	/* 마감수정자사번      VARCHAR(20)   */
+		     , up_dtm       = now()    			/* 마감수정일시        DATETIME      */
+		 WHERE mb_id = #{mb_id}
+		   AND com_ym = #{com_ym}
+		   AND emp_cd = #{emp_cd}
+	</update>
+	
+	<update id="updateeInsaDismissal" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml updateeMonthInsaDismissal 인사관리 해촉 처리 */
+		UPDATE tbin_empmst
+		   SET EMPSTA = #{empsta}
+		   	 , end_ymd = #{end_ymd}
+		   	 , out_ymd = #{end_ymd}
+		   	 , up_emp_cd = #{up_emp_cd}
+		   	 , up_dtm = now()
+		 WHERE mb_id = #{mb_id}
+		   AND emp_cd = #{emp_cd}
+	</update>
+	
+	<update id="updateeMonthInsaDismissal" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml updateeMonthInsaDismissal 인사마감 해촉 처리 */
+		UPDATE tbin_emp_month
+		   SET EMPSTA = #{empsta}
+		   	 , end_ymd = #{end_ymd}
+		   	 , out_ymd = #{end_ymd}
+		   	 , up_emp_cd = #{up_emp_cd}
+		   	 , up_dtm = now()
+		 WHERE mb_id = #{mb_id}
+		   AND emp_cd = #{emp_cd}
+		   AND com_ym = DATE_FORMAT(now(),'%Y%m')
+	</update>
+	
+	<update id="insaAppointment" parameterType="kr.co.gnx.insa.InsaVO">
+	    /* insa-mapper.xml id="insaAppointment" 인사 발령 정보로  인사정보 수정 */
+	    UPDATE tbin_empmst
+	       SET up_emp_cd = #{up_emp_cd}
+	         , up_dtm = NOW()
+	         <if test="@kr.co.gnx.comm.util.CommUtil@isNotEmpty(scd)">
+	         , scd = #{scd}
+	         </if>
+	         <if test="@kr.co.gnx.comm.util.CommUtil@isNotEmpty(jikgub)">
+	         , jikgub = #{jikgub}
+	         </if>
+	         <if test="@kr.co.gnx.comm.util.CommUtil@isNotEmpty(jikchk)">
+	         , jikchk = #{jikchk}
+	         </if>
+	     WHERE mb_id = #{mb_id}
+	       AND emp_cd = #{emp_cd}
+	</update>
+  
+	<select id="selectEmpSchDbTargetList" parameterType="kr.co.gnx.insa.InsaVO" resultType="hmap">
+		/* insa-mapper.xml id="selectEmpSchDbTargetList" 인사 정보 조회 DB분배 대상자 기준 */
+		SELECT * FROM
+		(<include refid="selectEmpSchSql"/>) tb10
+		WHERE emp_cd NOT IN(SELECT emp_cd FROM tbbs_dbdistribution_target tb11 WHERE mb_id = #{mb_id} AND db_attribute_seq = #{SRCH_DBATTRIBUTE})
+		<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_EMPSTA)'>
+		  AND tb10.empsta = #{SRCH_EMPSTA}
+		</if>
+	</select>
+	
+	<delete id="deleteInsaInfo" parameterType="kr.co.gnx.insa.InsaVO">
+		/* insa-mapper.xml id="deleteInsaInfo" 인사 정보 조회 DB분배 대상자 기준 */
+		DELETE
+		  FROM tbin_empmst
+		 WHERE mb_id = #{mb_id}
+		   AND emp_cd NOT IN (<include refid="Comm.RoleExcepcion"/>)
+	</delete>
+	
+	<select id="selectEmpView2" parameterType="kr.co.gnx.insa.InsaVO" resultType="hmap">
+		/* insa-mapper.xml id="selectEmpView2" 주민번호로 인사정보 조회 */
+		SELECT seq                    /* 일련번호 bigint(20)*/
+			 , mb_id                /* 회사코드 varchar(20)*/
+			 , emp_cd               /* 사원코드 varchar(20)*/
+			 , emp_nm               /* 사원명 varchar(20)*/
+			 , emp_nme              /* 영문명 varchar(50)*/
+			 , scd                  /* 조직코드 varchar(20)*/
+			 , perno                /* 주민등록번호 varchar(4000)*/
+			 , birth             	/* 생년월일 VARCHAR(10)*/
+			 , jikgub               /* 직급코드 varchar(20)*/
+			 , jikchk               /* 직책코드 varchar(20)*/
+			 , telno                /* 집 전화번호 varchar(15)*/
+			 , hpno                 /* 핸드폰번호 varchar(20)*/
+			 , extno                /* 내선번호 varchar(20)*/
+			 , email                /* 이메일 varchar(50)*/
+			 , zipcd                /* 우편번호 varchar(7)*/
+			 , addr1                /* 자택주소 varchar(200)*/
+			 , addr2                /* 자택주소상세 varchar(200)*/
+			 , empsta               /* 재직여부 varchar(20)*/
+			 , insco_emp_cd_gbn     /* 자격구분 varchar(1)*/
+			 , join_gbn             /* 입사구분 varchar(20)*/
+			 , pay_gbn              /* 급여구분 varchar(20)*/
+			 , rcrt_type            /* 유치방식 varchar(20)*/
+			 , re_emp_cd            /* 유치자 사원코드 varchar(20)*/
+			 , lreg_ymd             /* 생보등록일 varchar(10)*/
+			 , nreg_ymd             /* 손보등록일 varchar(10)*/
+			 , vreg_ymd             /* 변액등록일 varchar(10)*/
+			 , ent_ymd              /* 입사일자 varchar(10)*/
+			 , gent_ymd             /* 위촉일자 varchar(10)*/
+			 , apgent_ymd 			/* 적용위촉일자 varchar(10)*/
+			 , reentry_ymd       	/* 재입사일자      VARCHAR(10)   */
+			 , end_ymd              /* 퇴사일자 varchar(10)*/
+			 , out_ymd              /* 해촉일자 varchar(10)*/
+			 , gain_ymd				/* 취득일 varchar(10)*/
+			 , lost_ymd				/* 상실일 varchar(10)*/
+			 , bank                 /* 은행코드 varchar(20)*/
+			 , bk_id                /* 계좌번호 varchar(66)*/
+			 , owner                /* 예금주 varchar(50)*/
+			 , owner_relation       /* 예금주와의 관계 varchar(20)*/
+			 , memo                 /* 메모 varchar(1000)*/
+			 , file_name            /* 첨부파일명 varchar(200)*/
+			 , in_emp_cd            /* 입력자사번 varchar(20)*/
+			 , in_dtm               /* 입력일시 datetime*/
+			 , up_emp_cd            /* 수정자사번 varchar(20)*/
+			 , up_dtm               /* 수정일시 datetime*/
+			 , input_method         /* 입력방법(직접, 업로드) varchar(20)*/
+		  FROM tbin_empmst
+		 WHERE mb_id = #{mb_id}
+		   AND REPLACE(perno, '-', '') = REPLACE(#{perno}, '-', '')
+	</select>
+	
+	<select id="selectEmpView3Count" parameterType="kr.co.gnx.insa.InsaVO" resultType="Integer">
+		/* insa-mapper.xml id="selectEmpView3Count" 핸드폰번호 중복 조회 */
+		SELECT COUNT(emp_cd)
+		  FROM tbin_empmst /* [IN][인사] 인사마스터 */
+		 WHERE mb_id = #{mb_id}
+		   AND REPLACE(hpno, '-', '') = REPLACE(#{hpno}, '-', '')
+	</select>
+
+	<select id="selectEmpView3" parameterType="kr.co.gnx.insa.InsaVO" resultType="hmap">
+		/* insa-mapper.xml id="selectEmpView2" 핸드폰번호로 인사정보 조회 */
+		<include refid="Comm.OrgTree"/>
+		SELECT tb5.seq                 /* 일련번호               BIGINT        */
+		     , tb5.mb_id               /* 회사코드               VARCHAR(20)   */
+		     , tb5.emp_cd              /* 사원코드               VARCHAR(20)   */
+		     , tb5.emp_nm              /* 사원명                 VARCHAR(20)   */
+		     , tb5.emp_nme             /* 영문명                 VARCHAR(50)   */
+		     , tb5.scd                 /* 조직코드               VARCHAR(20)   */
+          	 , SUBSTRING(tb6.scdpath,4) AS scdpath
+ 	      	 , SUBSTRING(tb6.snmpath, 4) AS snmpath
+		  	 , fn_get_pathroot(SUBSTRING(tb6.snmpath,4), ' > ', 1) AS snmpath1
+		  	 , fn_get_pathroot(SUBSTRING(tb6.snmpath,2), ' > ', 2) AS snmpath2
+		  	 , fn_get_pathroot(SUBSTRING(tb6.snmpath,2), ' > ', 3) AS snmpath3
+		  	 , fn_get_pathroot(SUBSTRING(tb6.snmpath,2), ' > ', 4) AS snmpath4
+		  	 , fn_get_pathroot(SUBSTRING(tb6.snmpath,2), ' > ', 5) AS snmpath5
+		     , tb5.perno               /* 주민등록번호           VARCHAR(4000) */
+		     , tb5.birth               /* 생년월일 		VARCHAR(10)	  */
+		     , tb5.jikgub              /* 직급코드               VARCHAR(20)   */
+		     , tb5.jikchk              /* 직책코드               VARCHAR(20)   */
+		     , tb5.telno               /* 집 전화번호            VARCHAR(15)   */
+		     , tb5.hpno                /* 핸드폰번호             VARCHAR(20)   */
+		     , tb5.extno               /* 내선번호               VARCHAR(20)   */
+		     , tb5.email               /* 이메일                 VARCHAR(50)   */
+		     , tb5.zipcd               /* 우편번호               VARCHAR(7)    */
+		     , tb5.addr1               /* 자택주소               VARCHAR(200)  */
+		     , tb5.addr2               /* 자택주소상세           VARCHAR(200)  */
+		     , tb5.empsta              /* 재직여부               VARCHAR(20)   */
+		     , tb5.insco_emp_cd_gbn    /* 자격구분               VARCHAR(1)    */
+		     , tb5.join_gbn            /* 입사구분               VARCHAR(20)   */
+		     , tb5.pay_gbn             /* 급여구분               VARCHAR(20)   */
+		     , tb5.rcrt_type           /* 유치방식               VARCHAR(20)   */
+		     , tb5.re_emp_cd           /* 유치자 사원코드        VARCHAR(20)   */
+		     , tb5.lreg_ymd            /* 생보등록일             VARCHAR(10)   */
+		     , tb5.nreg_ymd            /* 손보등록일             VARCHAR(10)   */
+		     , tb5.vreg_ymd            /* 변액등록일             VARCHAR(10)   */
+		     , tb5.vreg_no             /* 변액등록번호           VARCHAR(30)   */
+		     , tb5.areg_no             /* 협회등록번호           VARCHAR(30)   */
+		     , tb5.areg_yn             /* 협회등록여부           VARCHAR(10)   */
+		     , tb5.career_gbn          /* 경력여부                VARCHAR(30)   */
+		     , tb5.ent_ymd             /* 입사일자               VARCHAR(10)   */
+		     , tb5.gent_ymd            /* 위촉일자               VARCHAR(10)   */
+		     , tb5.reentry_ymd         /* 재입사일자     	VARCHAR(10)   */
+		     , tb5.end_ymd             /* 퇴사일자               VARCHAR(10)   */
+		     , tb5.out_ymd             /* 해촉일자               VARCHAR(10)   */
+		     , tb5.gain_ymd             /* 취득일               VARCHAR(10)   */
+		     , tb5.lost_ymd             /* 상실일               VARCHAR(10)   */
+		     , tb5.bank                /* 은행코드               VARCHAR(20)   */
+		     , tb5.bk_id               /* 계좌번호               VARCHAR(66)   */
+		     , tb5.owner               /* 예금주                 VARCHAR(50)   */
+		     , tb5.owner_relation      /* 예금주와의 관계        VARCHAR(20)   */
+		     , tb5.memo                /* 메모                   VARCHAR(1000) */
+		     , tb5.file_name           /* 첨부파일명             VARCHAR(200)  */
+		     , tb5.in_emp_cd           /* 입력자사번             VARCHAR(20)   */
+		     , tb5.in_dtm              /* 입력일시               DATETIME      */
+		     , tb5.up_emp_cd           /* 수정자사번             VARCHAR(20)   */
+		     , tb5.up_dtm              /* 수정일시               DATETIME      */
+		     , tb5.input_method        /* 입력방법(직접, 업로드) VARCHAR(20)   */
+		  FROM tbin_empmst tb5 /* [IN][인사] 인사마스터 */
+     LEFT JOIN org_cte tb6
+			ON tb5.scd = tb6.scd
+		 WHERE tb5.mb_id = #{mb_id}
+		   AND REPLACE(tb5.hpno, '-', '') = REPLACE(#{hpno}, '-', '')
+	</select>
+
+	<select id="selectEmpTelno" parameterType="kr.co.gnx.insa.InsaVO" resultType="hmap">
+	    /* insa-mapper.xml id="selectEmpTelno" 사원 핸드폰번호(전화번호) 가져오기 */
+	    SELECT ORACLE_NVL(hpno, telno) AS telno
+	      FROM tbin_empmst
+	     WHERE mb_id = #{mb_id}
+	       AND emp_cd = #{emp_cd}
+	</select>
+	
+	<!-- 계정찾기 재직자 조회 -->
+	<select id="selectEmpCount" parameterType="kr.co.gnx.insa.InsaVO" resultType="Integer" >
+		/* insa-mapper.xml selectEmpCount 계정찾기 재직자 조회 */
+		SELECT COUNT(tb2.emp_cd) AS total
+		  FROM tbsy_login tb1
+		  LEFT JOIN tbin_empmst tb2
+			ON tb2.mb_id = UPPER(#{mb_id})
+		   AND tb1.mb_id = tb2.mb_id
+		   AND tb1.emp_cd = tb2.emp_cd
+		 WHERE tb2.emp_nm = #{emp_nm}
+		   AND REPLACE(tb2.hpno, '-', '') = REPLACE(#{hpno},'-','')
+		   AND tb2.mb_id = UPPER(#{mb_id})
+		   AND tb2.empsta NOT IN('입사대기')		
+		<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(emp_cd)'>
+		   AND tb1.login_id = #{emp_cd}
+		</if>
+	</select>
+	
+	<!-- 계정찾기 재직자 아이디조회 -->
+	<select id="getUserAuthId" parameterType="kr.co.gnx.insa.InsaVO" resultType="String" >
+	/* insa-mapper.xml getUserAuthId  계정찾기 재직자 아이디조회 */
+	SELECT tb2.login_id
+	  FROM tbin_empmst tb1
+	  LEFT JOIN tbsy_login tb2
+	  	ON tb1.mb_id = tb2.mb_id
+	   AND tb1.emp_cd = tb2.emp_cd
+	 WHERE tb1.emp_nm = REPLACE(#{emp_nm}, ' ', '')
+	   AND REPLACE(tb1.hpno, '-', '') = REPLACE(#{hpno}, '-', '')
+	   AND tb1.mb_id = UPPER(#{mb_id})
+	   AND tb1.empsta NOT IN('입사대기')
+	</select>
+
+	<select id="selectVmarkEpmDatamapping" resultType="hmap">
+	/* insa-mapper.xml id="selectVmarkEpmDatamapping" 밸류마크 ERP 인사정보 검색 */
+	  SELECT 'VM' AS MB_ID
+	        , A.HRS_COMP_ID AS EMP_CD
+	        , A.HRS_NM AS EMP_NM
+	        , '' AS EMP_NME
+	        , A.ORGT_ID AS SCD
+	        , A.HRS_BIRTH || '-_______' AS PERNO
+	        , B.CD_VL_NM AS JIKGUB
+	        , C.CD_VL_NM AS JIKCHK
+	        , CASE WHEN A.HRS_COMP_ID='VM1912050' THEN 'ROLE_2' ELSE 'ROLE_99' END AS ROLE_ID
+	        , '' AS TELNO
+	        , '' AS HPNO
+	        , '' AS EXTNO
+	        , A.HRS_PERS_EMAIL AS EMAIL
+	        , '' AS ZIPCD
+	        , A.HRS_ADDR1 AS ADDR1
+	        , A.HRS_ADDR2 AS ADDR2
+	        , CASE WHEN D.CD_VL_NM = '위촉' THEN '재직'  
+	        	   ELSE D.CD_VL_NM END AS EMPSTA    /* 밸류에서 재직 상태값을 위촉으로 명칭 변경. 안연정 2021.07.12 */
+	        , 1 AS INSCO_EMP_CD_GBN
+	        , '신규입사' AS JOIN_GBN
+	        , '사업자' AS PAY_GBN
+	        , 1 AS RCRT_TYPE
+	        , '' AS RE_EMP_CD
+	        , A.HRS_LIFE_INSU_DATE AS LREG_YMD
+	        , A.HRS_IDNT_INSU_DATE AS NREG_YMD
+	        , A.HRS_INS_EP_DATE AS VREG_YMD
+	        , '' AS VREG_NO
+	        , '' AS AREG_NO
+	        , '' AS CAREER_GBN
+	        , A.HRS_COMP_IN_DATE AS ENT_YMD
+	        , A.HRS_APIT_DATE AS GENT_YMD
+	        , A.HRS_FIRE_DATE AS END_YMD
+	        , '' AS OUT_YMD
+	        , '' AS BANK
+	        , '' AS BK_ID
+	        , '' AS OWNER
+	        , '' AS OWNER_RELATION
+	        , '' AS FILE_NAME
+	     FROM VM_HRS_PERS@REAL_VM A
+	LEFT JOIN (SELECT * FROM TBCM_COMMON_CODE@REAL_VM WHERE GRP_CMM_CD='JIKGUB_CD') B 
+	       ON A.HRS_PST_RANK_CD = B.CD_VL
+	LEFT JOIN (SELECT * FROM TBCM_COMMON_CODE@REAL_VM WHERE GRP_CMM_CD='JIKCHK_CD') C 
+	       ON A.HRS_PST_CD = C.CD_VL
+	LEFT JOIN (SELECT * FROM TBCM_COMMON_CODE@REAL_VM WHERE GRP_CMM_CD='EMPSTA') D 
+	       ON A.HRS_WORK_CD = D.CD_VL
+	    WHERE A.HRS_COMP_ID NOT LIKE '%AdminGuest%' 
+	      AND A.HRS_COMP_ID != 'VM1805035' /* test계정인데 ERP에 2개있어서 에러나서 처리 */
+	 ORDER BY HRS_COMP_ID DESC
+	</select>
+
+	<select id="selectVmarkBestEpmDatamapping" resultType="hmap">
+	/* insa-mapper.xml id="selectVmarkBestEpmDatamapping" 밸류마크 베스트금융 ERP 인사정보 검색 */
+	  SELECT 'VB' AS MB_ID
+	        , A.HRS_COMP_ID AS EMP_CD
+	        , A.HRS_NM AS EMP_NM
+	        , '' AS EMP_NME
+	        , 'T1002' AS SCD /* #9677 임시조직으로 입력 후 자체 관리 */
+	        , A.HRS_BIRTH || '-_______' AS PERNO
+	        , B.CD_VL_NM AS JIKGUB
+	        , C.CD_VL_NM AS JIKCHK
+	        , 'ROLE_99' AS ROLE_ID
+	        , '' AS TELNO
+	        , '' AS HPNO
+	        , '' AS EXTNO
+	        , A.HRS_PERS_EMAIL AS EMAIL
+	        , '' AS ZIPCD
+	        , A.HRS_ADDR1 AS ADDR1
+	        , A.HRS_ADDR2 AS ADDR2
+	        , D.CD_VL_NM AS EMPSTA
+	        , 1 AS INSCO_EMP_CD_GBN
+	        , '신규입사' AS JOIN_GBN
+	        , '사업자' AS PAY_GBN
+	        , 1 AS RCRT_TYPE
+	        , '' AS RE_EMP_CD
+	        , A.HRS_LIFE_INSU_DATE AS LREG_YMD
+	        , A.HRS_IDNT_INSU_DATE AS NREG_YMD
+	        , A.HRS_INS_EP_DATE AS VREG_YMD
+	        , '' AS VREG_NO
+	        , '' AS AREG_NO
+	        , '' AS CAREER_GBN
+	        , A.HRS_COMP_IN_DATE AS ENT_YMD
+	        , A.HRS_APIT_DATE AS GENT_YMD
+	        , A.HRS_FIRE_DATE AS END_YMD
+	        , '' AS OUT_YMD
+	        , E.HRS_BANK_CD AS BANK
+            , E.HRS_BANK_ACUN_NUM AS BK_ID
+            , E.HRS_BANK_DPST AS OWNER
+	        , '' AS OWNER_RELATION
+	        , '' AS FILE_NAME
+	     FROM VM_HRS_PERS@REAL_VM A
+	LEFT JOIN (SELECT * FROM TBCM_COMMON_CODE@REAL_VM WHERE GRP_CMM_CD='JIKGUB_CD') B 
+	       ON A.HRS_PST_RANK_CD = B.CD_VL
+	LEFT JOIN (SELECT * FROM TBCM_COMMON_CODE@REAL_VM WHERE GRP_CMM_CD='JIKCHK_CD') C 
+	       ON A.HRS_PST_CD = C.CD_VL
+	LEFT JOIN (SELECT * FROM TBCM_COMMON_CODE@REAL_VM WHERE GRP_CMM_CD='EMPSTA') D 
+	       ON A.HRS_WORK_CD = D.CD_VL
+    LEFT JOIN VM_HRS_PERS_ADD@REAL_VM E
+           ON A.HRS_IDX = E.HRS_IDX
+	    WHERE A.HRS_COMP_ID NOT LIKE '%AdminGuest%' 
+	      AND A.HRS_COMP_ID != 'VM1805035' /* test계정인데 ERP에 2개있어서 에러나서 처리 */
+          AND A.ORGT_ID IN (SELECT SCD FROM V_TBIN_SCD@REAL_VM START WITH SCD = 'VM0000002800' CONNECT BY PRIOR SCD = PSCD)
+	 ORDER BY HRS_COMP_ID DESC
+	</select>
+
+	<select id="selectPaymentEmpcdListStr" parameterType="kr.co.gnx.insa.InsaVO" resultType="String">
+		/* insa-mapper.xml selectPaymentEmpcdList ITX명세서 팀장권한일때 현재 ERP인사 기준 하위 조직들에 있는 사번 가져오기 */
+		<include refid="Comm.OrgTree"/>
+			SELECT  GROUP_CONCAT('\'',tb7.emp_cd,'\'') AS emp_cd_str
+              FROM (SELECT *
+                      FROM tbin_empmst
+                     WHERE mb_id = #{mb_id}) tb7
+   LEFT OUTER JOIN org_cte tb8
+                ON tb7.scd = tb8.scd
+			 WHERE 1 = 1
+			  AND tb7.emp_cd NOT IN ( <include refid="Comm.RoleExcepcion"/> )
+				AND CONCAT(tb8.scdpath,' >') LIKE CONCAT('%> ',#{user_scd},' >%')
+		<if test='@kr.co.gnx.comm.util.CommUtil@isNotEmpty(SRCH_EMPSTA)'>
+				AND tb7.empsta = #{SRCH_EMPSTA}
+		</if>
+	</select>
+	
+	<select id="selectRecruitList" parameterType="kr.co.gnx.insa.InsaVO" resultType="hmap">
+		/* insa-mapper.xml selectRecruitList 인사 상세정보 리쿠르팅 가져오기 */
+			<include refid="Comm.OrgTree"/>
+			, recruit_cte
+			      AS (SELECT 1 AS level
+			               , emp_cd
+			               , emp_nm
+			               , re_emp_cd
+			               , scd
+			               , jikchk
+			               , empsta
+			           FROM tbin_empmst
+			          WHERE mb_id = #{mb_id}
+			            AND emp_cd = #{emp_cd}
+			      UNION ALL
+			          SELECT level+1 AS level
+			               , tb1.emp_cd
+			               , tb1.emp_nm
+			               , tb1.re_emp_cd
+			               , tb1.scd
+			               , tb1.jikchk
+			               , tb1.empsta
+			           FROM tbin_empmst tb1
+			     INNER JOIN recruit_cte tb2 
+			             ON tb2.emp_cd = tb1.re_emp_cd
+			          WHERE mb_id = #{mb_id}   
+			      )	
+				SELECT CONCAT('LV',tb1.level) AS level
+                     , tb1.emp_cd
+                     , tb1.emp_nm
+                     , tb1.re_emp_cd
+                     , tb1.scd
+                     , tb1.jikchk
+                     , tb1.empsta
+                     , tb2.snmpath
+                  FROM recruit_cte tb1
+            INNER JOIN org_cte tb2
+                    ON tb1.scd = tb2.scd
+                 WHERE tb1.emp_cd != #{emp_cd}
+
+	</select>
+	
+	
+	
+</mapper>
